@@ -1,0 +1,3181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTC SpaceIQ — Store Space Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0B0E13;
+  --bg-secondary: #11151C;
+  --bg-tertiary: #181D28;
+  --bg-card: #141921;
+  --bg-hover: #1C2230;
+  --accent: #E8A838;
+  --accent-light: #F5C96A;
+  --accent-dim: rgba(232,168,56,0.12);
+  --text-primary: #EDE9E0;
+  --text-secondary: #8A91A3;
+  --text-muted: #555D70;
+  --border: #232A3A;
+  --success: #4ADE80;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --info: #60A5FA;
+  --cat-wall: #60A5FA;
+  --cat-table: #A78BFA;
+  --cat-bin: #4ADE80;
+  --cat-platform: #FB923C;
+  --cat-fridge: #38BDF8;
+  --cat-behind: #F472B6;
+  --cat-campaign: #FBBF24;
+  --cat-core: #34D399;
+  --radius: 10px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg-primary); color:var(--text-primary); min-height:100vh; overflow-x:hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  position:fixed; left:0; top:0; bottom:0; width:256px;
+  background:var(--bg-secondary); border-right:1px solid var(--border);
+  padding:24px 16px; z-index:100; display:flex; flex-direction:column;
+  overflow-y:auto;
+}
+.logo { font-family:'Instrument Serif',serif; font-size:24px; color:var(--accent); letter-spacing:-0.5px; }
+.logo-sub { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; margin:4px 0 28px; }
+.nav-section { font-size:9px; text-transform:uppercase; letter-spacing:2px; color:var(--text-muted); margin:20px 0 8px; padding-left:12px; }
+.nav-item {
+  display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:7px;
+  cursor:pointer; font-size:13px; color:var(--text-secondary); transition:all 0.2s; margin-bottom:1px;
+}
+.nav-item:hover { background:var(--bg-hover); color:var(--text-primary); }
+.nav-item.active { background:var(--accent-dim); color:var(--accent); font-weight:500; }
+.nav-item svg { width:16px; height:16px; flex-shrink:0; }
+.nav-badge { margin-left:auto; font-size:10px; padding:2px 7px; border-radius:10px; background:var(--bg-tertiary); color:var(--text-muted); }
+.sidebar-footer { margin-top:auto; padding-top:16px; border-top:1px solid var(--border); }
+.store-selector {
+  display:flex; align-items:center; gap:10px; padding:10px;
+  background:var(--bg-tertiary); border-radius:8px; cursor:pointer; transition:all 0.2s;
+}
+.store-selector:hover { border:1px solid var(--accent); margin:-1px; }
+.store-dot { width:8px; height:8px; border-radius:50%; background:var(--success); flex-shrink:0; }
+.store-name { font-size:12.5px; font-weight:500; }
+.store-meta { font-size:10.5px; color:var(--text-muted); }
+
+/* ─── MAIN ─── */
+.main { margin-left:256px; padding:24px 28px; min-height:100vh; }
+.page-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
+.page-title { font-family:'Instrument Serif',serif; font-size:28px; font-weight:400; letter-spacing:-0.5px; }
+.page-subtitle { font-size:12px; color:var(--text-secondary); margin-top:3px; }
+.header-actions { display:flex; gap:8px; }
+.btn {
+  padding:8px 16px; border-radius:7px; font-size:12.5px; font-weight:500;
+  cursor:pointer; border:none; font-family:inherit; transition:all 0.2s;
+  display:flex; align-items:center; gap:5px;
+}
+.btn-primary { background:var(--accent); color:var(--bg-primary); }
+.btn-primary:hover { background:var(--accent-light); }
+.btn-ghost { background:transparent; color:var(--text-secondary); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--bg-hover); color:var(--text-primary); }
+.btn-ghost.active { background:var(--accent-dim); color:var(--accent); border-color:var(--accent); }
+.btn svg { width:14px; height:14px; }
+
+/* ─── TABS ─── */
+.tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.tab {
+  padding:9px 18px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;
+  border-bottom:2px solid transparent; transition:all 0.2s; font-weight:500;
+}
+.tab:hover { color:var(--text-primary); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* ─── KPI STRIP ─── */
+.kpi-strip { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:22px; }
+.kpi {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; position:relative; overflow:hidden;
+}
+.kpi::before { content:''; position:absolute; top:0; left:0; width:100%; height:2px; }
+.kpi:nth-child(1)::before { background:var(--accent); }
+.kpi:nth-child(2)::before { background:var(--success); }
+.kpi:nth-child(3)::before { background:var(--info); }
+.kpi:nth-child(4)::before { background:var(--cat-table); }
+.kpi:nth-child(5)::before { background:var(--warning); }
+.kpi:nth-child(6)::before { background:var(--danger); }
+.kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text-muted); margin-bottom:6px; }
+.kpi-value { font-family:'Instrument Serif',serif; font-size:24px; letter-spacing:-0.5px; }
+.kpi-sub { font-size:10.5px; color:var(--text-secondary); margin-top:4px; }
+.kpi-sub.up { color:var(--success); }
+.kpi-sub.down { color:var(--danger); }
+
+/* ─── VIEW PANELS ─── */
+.view-panel { display:none; }
+.view-panel.active { display:block; }
+
+/* ─── CONTENT GRID ─── */
+.content-grid { display:grid; grid-template-columns:1fr 360px; gap:16px; }
+.content-grid-full { display:grid; grid-template-columns:1fr; gap:16px; }
+
+/* ─── CARD ─── */
+.card {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px; margin-bottom:14px;
+}
+.card-title {
+  font-size:13px; font-weight:600; margin-bottom:12px; display:flex;
+  align-items:center; justify-content:space-between;
+}
+.card-title .badge {
+  font-size:9.5px; padding:2px 8px; border-radius:12px;
+  background:var(--accent-dim); color:var(--accent); font-weight:500;
+}
+
+/* ─── FLOOR PLAN ─── */
+.floor-plan {
+  width:100%; aspect-ratio:16/9.5; background:var(--bg-primary);
+  border-radius:8px; border:1px solid var(--border); position:relative; overflow:hidden;
+}
+.zone {
+  position:absolute; border-radius:5px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transition:all 0.3s; border:1.5px solid transparent; text-align:center; gap:2px;
+}
+.zone:hover { transform:scale(1.015); z-index:10; border-color:rgba(255,255,255,0.25); }
+.zone.selected { border-color:var(--accent)!important; box-shadow:0 0 16px rgba(232,168,56,0.25); }
+.zone-label { font-size:10px; font-weight:600; color:rgba(255,255,255,0.9); line-height:1.2; }
+.zone-sub { font-size:8.5px; color:rgba(255,255,255,0.55); }
+.entrance {
+  position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  background:var(--bg-tertiary); border:1px solid var(--border); border-bottom:none;
+  border-radius:5px 5px 0 0; padding:3px 16px; font-size:9px;
+  text-transform:uppercase; letter-spacing:2px; color:var(--text-muted);
+}
+.checkout-bar {
+  position:absolute; bottom:6%; left:30%; right:30%; height:6%;
+  display:flex; gap:3px; align-items:center; justify-content:center;
+}
+.checkout-unit {
+  width:28px; height:100%; background:var(--bg-tertiary); border-radius:3px;
+  border:1px solid var(--border);
+}
+
+/* ─── TABLE ─── */
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th {
+  text-align:left; padding:10px 14px; font-size:10px; text-transform:uppercase;
+  letter-spacing:1px; color:var(--text-muted); background:var(--bg-tertiary);
+  border-bottom:1px solid var(--border); font-weight:500; white-space:nowrap;
+}
+.data-table td {
+  padding:10px 14px; font-size:12.5px; border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.data-table tbody tr:hover td { background:var(--bg-hover); }
+.dot { display:inline-block; width:7px; height:7px; border-radius:2px; margin-right:7px; vertical-align:middle; }
+.badge-pill {
+  padding:2px 9px; border-radius:12px; font-size:10.5px; font-weight:500;
+  display:inline-block;
+}
+.badge-open { background:rgba(74,222,128,0.12); color:var(--success); }
+.badge-closing { background:rgba(251,191,36,0.12); color:var(--warning); }
+.badge-closed { background:rgba(248,113,113,0.12); color:var(--danger); }
+.badge-core { background:rgba(52,211,153,0.12); color:var(--cat-core); }
+.badge-campaign { background:rgba(251,191,36,0.12); color:var(--cat-campaign); }
+.badge-seasonal { background:rgba(251,146,60,0.12); color:var(--cat-platform); }
+.badge-removed { background:rgba(248,113,113,0.12); color:var(--danger); }
+.badge-changed { background:rgba(251,191,36,0.12); color:var(--warning); }
+.badge-added { background:rgba(74,222,128,0.12); color:var(--success); }
+
+/* ─── DETAIL PANEL ─── */
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.detail-item { background:var(--bg-tertiary); border-radius:7px; padding:10px 12px; }
+.detail-label { font-size:9.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:3px; }
+.detail-value { font-size:15px; font-weight:600; }
+
+/* ─── PERF BARS ─── */
+.perf-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.perf-label { font-size:11px; width:120px; flex-shrink:0; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.perf-bar-bg { flex:1; height:6px; background:var(--bg-primary); border-radius:3px; overflow:hidden; }
+.perf-bar { height:100%; border-radius:3px; transition:width 0.8s ease; }
+.perf-val { font-size:11px; font-weight:600; width:35px; text-align:right; flex-shrink:0; }
+
+/* ─── ALERTS ─── */
+.alert-item {
+  display:flex; gap:8px; padding:9px 10px; background:var(--bg-tertiary);
+  border-radius:7px; margin-bottom:6px; border-left:3px solid;
+}
+.alert-item.warn { border-color:var(--warning); }
+.alert-item.danger { border-color:var(--danger); }
+.alert-item.info { border-color:var(--info); }
+.alert-icon { font-size:14px; flex-shrink:0; }
+.alert-text { font-size:11.5px; color:var(--text-secondary); line-height:1.45; }
+.alert-text strong { color:var(--text-primary); }
+
+/* ─── ENTITY RELATIONSHIP ─── */
+.er-container { padding:20px; }
+.er-node {
+  background:var(--bg-tertiary); border:1px solid var(--border); border-radius:8px;
+  padding:14px; display:inline-block; margin:6px; vertical-align:top; width:calc(25% - 16px);
+  min-width:200px; transition:all 0.3s; cursor:pointer;
+}
+.er-node:hover { border-color:var(--accent); }
+.er-node-title { font-size:13px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.er-node-title .dot-lg { width:10px; height:10px; border-radius:3px; }
+.er-field { font-size:11px; color:var(--text-secondary); padding:3px 0; display:flex; justify-content:space-between; }
+.er-field .pk { color:var(--accent); font-weight:600; font-size:9px; }
+.er-field .fk { color:var(--info); font-weight:600; font-size:9px; }
+.er-arrow { color:var(--text-muted); font-size:11px; display:flex; align-items:center; gap:4px; margin:4px 8px; }
+
+/* ─── MODULE CARDS ─── */
+.module-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.module-card {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px; cursor:pointer; transition:all 0.3s;
+}
+.module-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+.module-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.module-icon {
+  width:36px; height:36px; border-radius:8px; display:flex;
+  align-items:center; justify-content:center; font-size:16px;
+}
+.module-name { font-size:13px; font-weight:600; }
+.module-cat { font-size:11px; color:var(--text-secondary); }
+.module-stats { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.module-stat { background:var(--bg-tertiary); border-radius:5px; padding:6px 8px; }
+.module-stat-label { font-size:9px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); }
+.module-stat-value { font-size:13px; font-weight:600; }
+
+/* ─── ITEM TABLE ENHANCEMENTS ─── */
+.filter-bar {
+  display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;
+}
+.filter-chip {
+  padding:5px 12px; border-radius:20px; font-size:11px; cursor:pointer;
+  border:1px solid var(--border); background:var(--bg-tertiary); color:var(--text-secondary);
+  transition:all 0.2s;
+}
+.filter-chip:hover { border-color:var(--text-secondary); }
+.filter-chip.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+.search-input {
+  padding:6px 12px; border-radius:20px; font-size:12px;
+  border:1px solid var(--border); background:var(--bg-tertiary);
+  color:var(--text-primary); font-family:inherit; outline:none; width:200px;
+}
+.search-input:focus { border-color:var(--accent); }
+
+/* ─── TOOLTIP ─── */
+.tooltip {
+  position:fixed; background:var(--bg-secondary); border:1px solid var(--border);
+  border-radius:8px; padding:10px 14px; font-size:11px; pointer-events:none;
+  z-index:1000; box-shadow:var(--shadow); display:none; max-width:240px;
+}
+.tooltip-title { font-weight:600; margin-bottom:5px; }
+.tooltip-row { display:flex; justify-content:space-between; gap:16px; margin-bottom:2px; color:var(--text-secondary); }
+.tooltip-row span:last-child { color:var(--text-primary); font-weight:500; }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200;
+  display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px);
+}
+.modal-overlay.active { display:flex; }
+.modal {
+  background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px;
+  width:620px; max-height:85vh; overflow-y:auto; padding:24px;
+}
+.modal-title { font-family:'Instrument Serif',serif; font-size:22px; margin-bottom:18px; }
+.form-group { margin-bottom:14px; }
+.form-label { display:block; font-size:11px; font-weight:500; color:var(--text-secondary); margin-bottom:5px; }
+.form-input,.form-select {
+  width:100%; padding:9px 12px; background:var(--bg-tertiary); border:1px solid var(--border);
+  border-radius:7px; color:var(--text-primary); font-family:inherit; font-size:12.5px; outline:none;
+}
+.form-input:focus,.form-select:focus { border-color:var(--accent); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:14px; border-top:1px solid var(--border); }
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.kpi { animation:fadeIn 0.4s ease both; }
+.kpi:nth-child(2){animation-delay:.04s} .kpi:nth-child(3){animation-delay:.08s}
+.kpi:nth-child(4){animation-delay:.12s} .kpi:nth-child(5){animation-delay:.16s} .kpi:nth-child(6){animation-delay:.2s}
+
+/* ─── PLANNER WORKFLOW ─── */
+.wf-stepper {
+  display:flex; align-items:center; gap:0; margin-bottom:22px;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:4px;
+}
+.wf-step {
+  flex:1; display:flex; align-items:center; gap:10px; padding:12px 16px;
+  cursor:pointer; border-radius:8px; transition:all 0.25s; position:relative;
+}
+.wf-step:hover { background:var(--bg-hover); }
+.wf-step.active { background:var(--accent-dim); }
+.wf-step.completed .wf-step-num { background:var(--success); color:var(--bg-primary); border-color:var(--success); }
+.wf-step-num {
+  width:28px; height:28px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;
+  border:2px solid var(--border); color:var(--text-muted); transition:all 0.25s;
+}
+.wf-step.active .wf-step-num { border-color:var(--accent); color:var(--accent); background:var(--accent-dim); }
+.wf-step-text { line-height:1.3; }
+.wf-step-title { font-size:12.5px; font-weight:600; color:var(--text-secondary); }
+.wf-step.active .wf-step-title { color:var(--accent); }
+.wf-step.completed .wf-step-title { color:var(--success); }
+.wf-step-sub { font-size:10px; color:var(--text-muted); }
+.wf-connector {
+  width:40px; height:2px; background:var(--border); flex-shrink:0;
+}
+.wf-connector.done { background:var(--success); }
+
+.wf-panel { display:none; }
+.wf-panel.active { display:block; }
+
+/* Merge matrix */
+.merge-matrix {
+  width:100%; border-collapse:collapse; font-size:12px;
+}
+.merge-matrix th {
+  padding:10px 12px; text-align:left; font-size:10px; text-transform:uppercase;
+  letter-spacing:1px; color:var(--text-muted); background:var(--bg-tertiary);
+  border-bottom:1px solid var(--border); font-weight:500; white-space:nowrap; position:sticky; top:0;
+}
+.merge-matrix td {
+  padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.merge-matrix tbody tr:hover td { background:var(--bg-hover); }
+.merge-matrix .match { background:rgba(74,222,128,0.06); }
+.merge-match { color:var(--success); font-weight:600; }
+.merge-miss { color:var(--text-muted); }
+.merge-action {
+  padding:3px 10px; border-radius:12px; font-size:10px; font-weight:600; cursor:pointer;
+  border:none; font-family:inherit; transition:all 0.2s;
+}
+.merge-action.add { background:rgba(74,222,128,0.12); color:var(--success); }
+.merge-action.add:hover { background:rgba(74,222,128,0.25); }
+.merge-action.skip { background:var(--bg-tertiary); color:var(--text-muted); }
+.merge-action.added { background:rgba(232,168,56,0.12); color:var(--accent); pointer-events:none; }
+
+/* Capacity bar */
+.cap-bar-wrap { display:flex; align-items:center; gap:8px; }
+.cap-bar { flex:1; height:8px; background:var(--bg-primary); border-radius:4px; overflow:hidden; position:relative; }
+.cap-bar-fill { height:100%; border-radius:4px; transition:width 0.6s ease; }
+.cap-bar-label { font-size:11px; font-weight:600; width:40px; text-align:right; }
+
+/* ─── ENTITY GRAPH ─── */
+#graphCanvas { background:var(--bg-primary); border-radius:8px; }
+.graph-layout-btn.active { background:var(--accent-dim)!important; color:var(--accent)!important; border-color:var(--accent)!important; }
+.graph-conn-row {
+  display:flex; align-items:center; gap:6px; padding:6px 8px;
+  background:var(--bg-tertiary); border-radius:5px; margin-bottom:4px; font-size:11px;
+  cursor:pointer; transition:all 0.15s;
+}
+.graph-conn-row:hover { background:var(--bg-hover); }
+.graph-conn-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+.graph-conn-label { flex:1; color:var(--text-secondary); }
+.graph-conn-via { font-size:9.5px; color:var(--text-muted); font-style:italic; }
+.graph-conn-dir { color:var(--accent); font-size:12px; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ─── DATA MODEL ENHANCED ─── */
+.er-card {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:0; width:calc(25% - 12px); min-width:240px; cursor:pointer;
+  transition:all 0.3s; overflow:hidden; flex-shrink:0;
+}
+.er-card:hover { border-color:rgba(232,168,56,0.4); transform:translateY(-2px); }
+.er-card.selected { border-color:var(--accent); box-shadow:0 0 20px rgba(232,168,56,0.15); }
+.er-card-header {
+  padding:12px 14px; display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.er-card-icon { width:32px; height:32px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+.er-card-name { font-size:13px; font-weight:600; }
+.er-card-type { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
+.er-card-body { padding:10px 14px; max-height:200px; overflow-y:auto; }
+.er-attr {
+  display:flex; align-items:center; gap:6px; padding:4px 0;
+  font-size:11.5px; color:var(--text-secondary); border-bottom:1px solid rgba(35,42,58,0.5);
+}
+.er-attr:last-child { border-bottom:none; }
+.er-attr-name { flex:1; }
+.er-attr-type { font-size:10px; color:var(--text-muted); font-family:monospace; }
+.er-attr-key {
+  font-size:8.5px; font-weight:700; padding:1px 5px; border-radius:3px;
+  text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0;
+}
+.er-attr-key.pk { background:rgba(232,168,56,0.15); color:var(--accent); }
+.er-attr-key.cpk { background:rgba(232,168,56,0.25); color:var(--accent-light); }
+.er-attr-key.fk { background:rgba(96,165,250,0.15); color:var(--info); }
+.er-attr-key.uk { background:rgba(167,139,250,0.15); color:var(--cat-table); }
+.er-card-footer {
+  padding:8px 14px; background:var(--bg-tertiary); display:flex;
+  justify-content:space-between; font-size:10px; color:var(--text-muted);
+}
+.key-indicator { display:inline-flex; align-items:center; gap:3px; }
+.key-indicator::before {
+  content:''; width:6px; height:6px; border-radius:2px; display:inline-block;
+}
+.key-indicator.has-pk::before { background:var(--accent); }
+.key-indicator.has-cpk::before { background:var(--accent-light); }
+.key-indicator.has-fk::before { background:var(--info); }
+
+/* Detail attribute table */
+.attr-table { width:100%; border-collapse:collapse; }
+.attr-table th {
+  text-align:left; padding:8px 12px; font-size:10px; text-transform:uppercase;
+  letter-spacing:1px; color:var(--text-muted); background:var(--bg-tertiary);
+  border-bottom:1px solid var(--border); font-weight:500;
+}
+.attr-table td { padding:8px 12px; font-size:12px; border-bottom:1px solid var(--border); }
+.attr-table tbody tr:hover td { background:var(--bg-hover); }
+.key-toggle {
+  width:20px; height:20px; border-radius:4px; border:1.5px solid var(--border);
+  background:transparent; cursor:pointer; display:flex; align-items:center;
+  justify-content:center; transition:all 0.2s; font-size:10px; color:transparent;
+}
+.key-toggle:hover { border-color:var(--accent); }
+.key-toggle.active { border-color:var(--accent); background:var(--accent); color:var(--bg-primary); }
+.key-toggle.active-cpk { border-color:var(--accent-light); background:rgba(232,168,56,0.25); color:var(--accent-light); }
+.key-toggle.active-fk { border-color:var(--info); background:rgba(96,165,250,0.15); color:var(--info); }
+
+.key-badge-row { display:flex; gap:4px; flex-wrap:wrap; }
+.key-badge-sm {
+  font-size:9px; padding:2px 6px; border-radius:3px; font-weight:600;
+  letter-spacing:0.3px; cursor:pointer; transition:all 0.2s; user-select:none;
+}
+.key-badge-sm.pk { background:rgba(232,168,56,0.15); color:var(--accent); }
+.key-badge-sm.cpk { background:rgba(232,168,56,0.25); color:var(--accent-light); }
+.key-badge-sm.fk { background:rgba(96,165,250,0.15); color:var(--info); }
+.key-badge-sm.uk { background:rgba(167,139,250,0.15); color:var(--cat-table); }
+.key-badge-sm.none { background:var(--bg-tertiary); color:var(--text-muted); }
+.key-badge-sm:hover { filter:brightness(1.3); }
+
+.attr-actions {
+  display:flex; gap:4px; opacity:0; transition:opacity 0.15s;
+}
+.attr-table tbody tr:hover .attr-actions { opacity:1; }
+.attr-action-btn {
+  width:22px; height:22px; border-radius:4px; border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:11px;
+  background:var(--bg-tertiary); color:var(--text-muted); transition:all 0.15s;
+}
+.attr-action-btn:hover { color:var(--text-primary); background:var(--bg-hover); }
+.attr-action-btn.danger:hover { color:var(--danger); }
+
+/* Relationship lines */
+.rel-row {
+  display:flex; align-items:center; gap:8px; padding:7px 10px;
+  background:var(--bg-tertiary); border-radius:6px; margin-bottom:5px; font-size:12px;
+}
+.rel-from { font-weight:600; color:var(--text-primary); min-width:130px; }
+.rel-arrow { color:var(--accent); font-size:16px; }
+.rel-to { font-weight:600; color:var(--text-primary); min-width:130px; }
+.rel-via { font-size:10.5px; color:var(--text-muted); font-style:italic; }
+.rel-cardinality {
+  font-size:9px; padding:2px 7px; border-radius:10px;
+  background:rgba(96,165,250,0.1); color:var(--info); font-weight:500; margin-left:auto;
+}
+.store-dropdown {
+  position:absolute; bottom:100%; left:0; right:0; background:var(--bg-secondary);
+  border:1px solid var(--border); border-radius:8px; margin-bottom:6px;
+  box-shadow:var(--shadow); display:none; z-index:101; max-height:200px; overflow-y:auto;
+}
+.store-dropdown.open { display:block; }
+.store-option {
+  padding:8px 12px; font-size:12px; cursor:pointer; transition:background 0.15s;
+  display:flex; align-items:center; gap:8px;
+}
+.store-option:hover { background:var(--bg-hover); }
+.store-option .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">FTC SpaceIQ</div>
+  <div class="logo-sub">Store Space Management</div>
+
+  <div class="nav-section">Space Operations</div>
+  <div class="nav-item active" data-view="dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </div>
+
+  <div class="nav-section">Planner Workflow</div>
+  <div class="nav-item" data-view="planner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+    Space Planner
+  </div>
+
+  <div class="nav-section">Data Views</div>
+  <div class="nav-item" data-view="store-space">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 3v18"/></svg>
+    Store Space
+    <span class="nav-badge">5</span>
+  </div>
+  <div class="nav-item" data-view="modules">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    VM Modules
+    <span class="nav-badge">9</span>
+  </div>
+  <div class="nav-item" data-view="items">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+    Items & Products
+    <span class="nav-badge">10</span>
+  </div>
+
+  <div class="nav-section">Planning</div>
+  <div class="nav-item" data-view="campaigns">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    Campaigns
+    <span class="nav-badge">11</span>
+  </div>
+  <div class="nav-item" data-view="assortment">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Store Assortment
+  </div>
+  <div class="nav-item" data-view="ranging">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+    Ranging & Diff
+  </div>
+
+  <div class="nav-section">Reference</div>
+  <div class="nav-item" data-view="data-model">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    Data Model
+    <span class="nav-badge">10</span>
+  </div>
+  <div class="nav-item" data-view="graph">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="3"/><circle cx="19" cy="6" r="3"/><circle cx="12" cy="19" r="3"/><line x1="7.5" y1="7.5" x2="10" y2="17"/><line x1="16.5" y1="7.5" x2="14" y2="17"/><line x1="8" y1="6" x2="16" y2="6"/></svg>
+    Entity Graph
+  </div>
+
+  <div class="sidebar-footer" style="position:relative;">
+    <div class="store-selector" id="storeSelector" onclick="toggleStoreDropdown()">
+      <div class="store-dot" id="storeDot"></div>
+      <div>
+        <div class="store-name" id="storeNameDisplay">Oostende Kapellestraat</div>
+        <div class="store-meta" id="storeMetaDisplay">BE01009 · O&O · 206 nsqm</div>
+      </div>
+    </div>
+    <div class="store-dropdown" id="storeDropdown"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <div class="page-title" id="pageTitle">Space Operations Dashboard</div>
+      <div class="page-subtitle" id="pageSubtitle">Oostende Kapellestraat (BE01009) — Week 7, 2026</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" onclick="openModal('space')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Space
+      </button>
+      <button class="btn btn-primary" onclick="openModal('assortment')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export View
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: DASHBOARD -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel active" id="view-dashboard">
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kpi-label">Net Selling Area</div><div class="kpi-value">206 m²</div><div class="kpi-sub">of 720 m² gross</div></div>
+      <div class="kpi"><div class="kpi-label">Active Modules</div><div class="kpi-value">9</div><div class="kpi-sub up">Wall · Table · Bin · Platform</div></div>
+      <div class="kpi"><div class="kpi-label">Store Spaces</div><div class="kpi-value">5</div><div class="kpi-sub">P1, P2, P3 locations</div></div>
+      <div class="kpi"><div class="kpi-label">Ranged Items</div><div class="kpi-value">10</div><div class="kpi-sub">across all modules</div></div>
+      <div class="kpi"><div class="kpi-label">Active Campaigns</div><div class="kpi-value">3</div><div class="kpi-sub">2026-01, 02, 10</div></div>
+      <div class="kpi"><div class="kpi-label">Fixture Categories</div><div class="kpi-value">4</div><div class="kpi-sub">Wall · Table · Fridge · Bin</div></div>
+    </div>
+
+    <div class="content-grid">
+      <div>
+        <!-- FLOOR PLAN -->
+        <div class="card">
+          <div class="card-title">Store Layout — BE01009 Oostende
+            <div style="display:flex;gap:4px;">
+              <button class="btn btn-ghost" style="padding:4px 8px;font-size:10px;" onclick="toggleHeatmap()">Heatmap</button>
+            </div>
+          </div>
+          <div class="floor-plan" id="floorPlan">
+            <div class="checkout-bar">
+              <div class="checkout-unit"></div><div class="checkout-unit"></div>
+              <div class="checkout-unit"></div><div class="checkout-unit"></div>
+            </div>
+            <div class="entrance">▼ Entrance ▼</div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;" id="legend"></div>
+        </div>
+
+        <!-- STORE SPACE TABLE -->
+        <div class="card">
+          <div class="card-title">Store Space Allocations <span class="badge">from StoreSpace entity</span></div>
+          <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr>
+              <th>Space ID</th><th>VM Module</th><th>Category</th><th>Location</th><th>Dimensions</th><th>Count</th><th>Start</th><th>End</th>
+            </tr></thead>
+            <tbody id="storeSpaceTable"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div>
+        <div class="card" id="zoneDetailPanel">
+          <div class="card-title">Space Details <span class="badge" id="detailBadge">Click a zone</span></div>
+          <div id="zoneDetailContent">
+            <div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:12px;">Select a zone on the floor plan to inspect</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Module Distribution</div>
+          <div id="moduleDistBars"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Space Alerts <span class="badge">3 Active</span></div>
+          <div class="alert-item warn"><div class="alert-icon">⚠</div><div class="alert-text"><strong>VM-TABLE-001</strong> in P2 has no active assortment after Feb 28 — campaign 2026-02 ending</div></div>
+          <div class="alert-item danger"><div class="alert-icon">●</div><div class="alert-text"><strong>Item 1000034</strong> (Folder w. Rose Flower) VM theme changing from S→XS mid-campaign — verify planogram</div></div>
+          <div class="alert-item info"><div class="alert-icon">ℹ</div><div class="alert-text"><strong>Platform entrance</strong> (Space 5) has single module count — consider expanding for seasonal push</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: SPACE PLANNER WORKFLOW -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-planner">
+
+    <!-- Workflow Stepper -->
+    <div class="wf-stepper">
+      <div class="wf-step active" onclick="goStep(1)" id="wfStep1">
+        <div class="wf-step-num">1</div>
+        <div class="wf-step-text">
+          <div class="wf-step-title">Define Modules</div>
+          <div class="wf-step-sub">Master module catalog</div>
+        </div>
+      </div>
+      <div class="wf-connector" id="wfConn1"></div>
+      <div class="wf-step" onclick="goStep(2)" id="wfStep2">
+        <div class="wf-step-num">2</div>
+        <div class="wf-step-text">
+          <div class="wf-step-title">Store Space</div>
+          <div class="wf-step-sub">Assign modules to locations</div>
+        </div>
+      </div>
+      <div class="wf-connector" id="wfConn2"></div>
+      <div class="wf-step" onclick="goStep(3)" id="wfStep3">
+        <div class="wf-step-num">3</div>
+        <div class="wf-step-text">
+          <div class="wf-step-title">Item ↔ Module</div>
+          <div class="wf-step-sub">Map items to eligible modules</div>
+        </div>
+      </div>
+      <div class="wf-connector" id="wfConn3"></div>
+      <div class="wf-step" onclick="goStep(4)" id="wfStep4">
+        <div class="wf-step-num">4</div>
+        <div class="wf-step-text">
+          <div class="wf-step-title">Build Assortment</div>
+          <div class="wf-step-sub">Merge space + items → ranging</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── STEP 1: MODULE MASTER ──────── -->
+    <div class="wf-panel active" id="wfPanel1">
+      <div class="card">
+        <div class="card-title">
+          Step 1 — Define Organisation Module Catalog
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:11px;" onclick="openAddModuleModal()">+ Add Module</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+          Define the master list of VM modules available across the organisation. Each module has a <strong>category</strong> (Wall, Table, Bin, Platform, Fridge…), a <strong>size code</strong>, an <strong>assortment type</strong> (Core, Campaign, Fixed…), and <strong>MDQ/PDQ</strong> capacity values that determine how many items can be ranged into it.
+        </p>
+        <div style="overflow-x:auto;">
+        <table class="data-table" id="wfModuleTable">
+          <thead><tr>
+            <th>ID</th><th>VM Module Code</th><th>Category</th><th>Size</th><th>Assortment Type</th><th>MDQ</th><th>PDQ</th><th>AX Code</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="wfModuleBody"></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="content-grid" style="grid-template-columns:1fr 1fr;margin-top:0;">
+        <div class="card">
+          <div class="card-title">Module Capacity Overview</div>
+          <div id="wfModuleCapacity"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Category Distribution</div>
+          <div id="wfModuleCatDist"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+        <button class="btn btn-primary" onclick="goStep(2)">Continue to Store Space →</button>
+      </div>
+    </div>
+
+    <!-- ──────── STEP 2: STORE SPACE ──────── -->
+    <div class="wf-panel" id="wfPanel2">
+      <div class="card">
+        <div class="card-title">
+          Step 2 — Record Store Space (Modules × Locations × Count)
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:11px;" onclick="openAddSpaceRow()">+ Add Space</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+          For each store, allocate physical locations to modules. Each row specifies <strong>which module</strong> occupies a space, <strong>where</strong> it sits (P1, P2, etc.), its <strong>physical dimensions</strong>, and critically the <strong>fixture count</strong> — how many units of that module exist at that location. The count directly drives how many items can be ranged into that space (count × MDQ).
+        </p>
+        <div style="overflow-x:auto;">
+        <table class="data-table" id="wfSpaceTable">
+          <thead><tr>
+            <th>Space</th><th>Store</th><th>VM Module</th><th>Category</th><th>Location</th><th>Dimensions</th><th>Count</th><th>Total MDQ</th><th>Total PDQ</th><th>Start</th><th>End</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="wfSpaceBody"></tbody>
+          <tfoot id="wfSpaceFoot"></tfoot>
+        </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:0;">
+        <div class="card-title">Space Capacity Summary by Module</div>
+        <div id="wfSpaceCapSummary"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Back to Modules</button>
+        <button class="btn btn-primary" onclick="goStep(3)">Continue to Item Mapping →</button>
+      </div>
+    </div>
+
+    <!-- ──────── STEP 3: ITEM ↔ MODULE ──────── -->
+    <div class="wf-panel" id="wfPanel3">
+      <div class="card">
+        <div class="card-title">
+          Step 3 — Item ↔ Module Eligibility
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:11px;" onclick="openAddItemModuleRow()">+ Map Item</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+          Each item declares <strong>which module(s)</strong> it is eligible to be displayed in, along with its own <strong>item-level MDQ/PDQ</strong>. This mapping is the key input that determines which items <em>can</em> be ranged into which store spaces. An item's module eligibility combined with a store's module allocation produces the candidate assortment.
+        </p>
+        <div style="overflow-x:auto;">
+        <table class="data-table" id="wfItemModTable">
+          <thead><tr>
+            <th>Item #</th><th>Item Name</th><th>Category</th><th>Eligible Module</th><th>Module Cat.</th><th>Item MDQ</th><th>Item PDQ</th><th>Campaign</th><th>VM Theme</th><th>Validity</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="wfItemModBody"></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="content-grid" style="grid-template-columns:1fr 1fr;margin-top:0;">
+        <div class="card">
+          <div class="card-title">Item Coverage by Module</div>
+          <div id="wfItemCoverage"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Eligibility Gaps <span class="badge" style="background:rgba(248,113,113,0.12);color:var(--danger)">Modules with no items</span></div>
+          <div id="wfItemGaps"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;">
+        <button class="btn btn-ghost" onclick="goStep(2)">← Back to Store Space</button>
+        <button class="btn btn-primary" onclick="goStep(4)">Build Assortment →</button>
+      </div>
+    </div>
+
+    <!-- ──────── STEP 4: BUILD ASSORTMENT / RANGING ──────── -->
+    <div class="wf-panel" id="wfPanel4">
+      <div class="card">
+        <div class="card-title">
+          Step 4 — Merge Store Space × Item Eligibility → Store Assortment
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:11px;" onclick="runMerge()">⟳ Run Merge</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+          The merge engine joins <strong>Store Space</strong> (which modules exist at which locations with what count) with <strong>Item-Module eligibility</strong> (which items can go into which modules). The result is the <strong>Store Assortment</strong> — the full list of items rangeable into each store space. Capacity utilisation is calculated as items ranged vs. total MDQ capacity per space.
+        </p>
+        <div id="mergeStatus" style="display:none;margin-bottom:14px;"></div>
+        <div style="overflow-x:auto;">
+        <table class="merge-matrix" id="mergeTable">
+          <thead><tr>
+            <th>Space</th><th>Location</th><th>VM Module</th><th>Count</th><th>Space MDQ</th><th>Item #</th><th>Item Name</th><th>Item MDQ</th><th>Campaign</th><th>Capacity Used</th><th>Status</th><th>Action</th>
+          </tr></thead>
+          <tbody id="mergeBody"></tbody>
+        </table>
+        </div>
+      </div>
+      <div class="content-grid" style="grid-template-columns:1fr 1fr;margin-top:0;">
+        <div class="card">
+          <div class="card-title">Capacity Utilisation by Space</div>
+          <div id="mergeCapUtil"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Assortment Summary</div>
+          <div id="mergeSummary"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;">
+        <button class="btn btn-ghost" onclick="goStep(3)">← Back to Item Mapping</button>
+        <button class="btn btn-primary" onclick="alert('Exported: FTC_StoreAssortment_BE01009.xlsx')">Export Assortment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: STORE SPACE -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-store-space">
+    <div class="card">
+      <div class="card-title">Store Space Details — Physical Locations <span class="badge">spaceID → storeID → moduleID</span></div>
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr>
+          <th>Space ID</th><th>Store ID</th><th>Module ID</th><th>VM Module</th><th>Location Description</th><th>Dimensions</th><th>Fixture Count</th><th>Start Date</th><th>End Date</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>1</td><td>BE01009</td><td>1</td><td><span class="dot" style="background:var(--cat-wall)"></span>VM-WALL-001</td><td>P1 - Right Wall</td><td>2.5m × 3m</td><td>4</td><td>2024-01-01</td><td>2099-01-01</td></tr>
+          <tr><td>2</td><td>BE01010</td><td>2</td><td><span class="dot" style="background:var(--cat-table)"></span>VM-TABLE-001</td><td>P2 - Left Window</td><td>3m × 2m × 0.8m</td><td>2</td><td>2024-01-01</td><td>2099-01-02</td></tr>
+          <tr><td>3</td><td>BE01011</td><td>2</td><td><span class="dot" style="background:var(--cat-table)"></span>VM-TABLE-001</td><td>P3 - Central Table</td><td>1.5m × 1.5m × 0.9m</td><td>1</td><td>2024-01-01</td><td>2099-01-03</td></tr>
+          <tr><td>4</td><td>BE01012</td><td>1</td><td><span class="dot" style="background:var(--cat-wall)"></span>VM-WALL-001</td><td>Main Wall - Left</td><td>2m × 2.5m</td><td>3</td><td>2024-01-01</td><td>2099-01-04</td></tr>
+          <tr><td>5</td><td>BE01013</td><td>4</td><td><span class="dot" style="background:var(--cat-platform)"></span>VM-PLATFORM-001</td><td>Entrance Platform</td><td>4m × 3m × 0.4m</td><td>1</td><td>2024-01-01</td><td>2099-01-05</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Store Master — BE01009 <span class="badge">from Store entity</span></div>
+      <div class="detail-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="detail-item"><div class="detail-label">Store Name</div><div class="detail-value" style="font-size:13px;">Oostende Kapellestraat</div></div>
+        <div class="detail-item"><div class="detail-label">Partner Code</div><div class="detail-value">BE01</div></div>
+        <div class="detail-item"><div class="detail-label">Ownership</div><div class="detail-value">O&O</div></div>
+        <div class="detail-item"><div class="detail-label">Opening Date</div><div class="detail-value" style="font-size:13px;">2016-06-10</div></div>
+        <div class="detail-item"><div class="detail-label">Net SQM</div><div class="detail-value">206</div></div>
+        <div class="detail-item"><div class="detail-label">Gross SQM</div><div class="detail-value">720</div></div>
+        <div class="detail-item"><div class="detail-label">Ground Floor</div><div class="detail-value">130 m²</div></div>
+        <div class="detail-item"><div class="detail-label">First Floor</div><div class="detail-value">120 m²</div></div>
+        <div class="detail-item"><div class="detail-label">Other Floor</div><div class="detail-value">90 m²</div></div>
+        <div class="detail-item"><div class="detail-label">Location Type</div><div class="detail-value">Street</div></div>
+        <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="badge-pill badge-open">Open</span></div></div>
+        <div class="detail-item"><div class="detail-label">Layout Approved</div><div class="detail-value" style="color:var(--success)">✓ 2021-01-01</div></div>
+        <div class="detail-item"><div class="detail-label">Safety Stock</div><div class="detail-value">2</div></div>
+        <div class="detail-item"><div class="detail-label">Country</div><div class="detail-value">🇧🇪 BE</div></div>
+        <div class="detail-item"><div class="detail-label">Zip Code</div><div class="detail-value">8400</div></div>
+        <div class="detail-item"><div class="detail-label">Address</div><div class="detail-value" style="font-size:11px;">Kapellestraat 30-32</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: VM MODULES -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-modules">
+    <div class="card">
+      <div class="card-title">VM Module Master <span class="badge">moduleMaster entity · MDQ/PDQ capacity</span></div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="filterModules('all',this)">All</div>
+        <div class="filter-chip" onclick="filterModules('Wall',this)">Wall</div>
+        <div class="filter-chip" onclick="filterModules('Table',this)">Table</div>
+        <div class="filter-chip" onclick="filterModules('Bin',this)">Bin</div>
+        <div class="filter-chip" onclick="filterModules('Platform',this)">Platform</div>
+      </div>
+      <div class="module-grid" id="moduleGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Module Size Reference <span class="badge">ModuleSize entity</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:6px 14px;font-size:12px;">XXXS</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:6px 14px;font-size:12px;">XXS</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:6px 14px;font-size:12px;">XS</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-primary);padding:6px 14px;font-size:12px;border:1px solid var(--accent);">S (ID:9)</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-primary);padding:6px 14px;font-size:12px;border:1px solid var(--accent);">M (ID:10)</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-primary);padding:6px 14px;font-size:12px;border:1px solid var(--accent);">L (ID:11)</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:6px 14px;font-size:12px;">XL</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:6px 14px;font-size:12px;">XXL</div>
+        <div class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:6px 14px;font-size:12px;">XXXL</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Space Module Reference <span class="badge">SpaceModule entity · Fixture mapping</span></div>
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>ID</th><th>Space Module Name</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Additional_fixtures_8 section_perspex_box</td><td>Fixture</td></tr>
+          <tr><td>2</td><td>Additional_fixtures_Frame_holder</td><td>Fixture</td></tr>
+          <tr><td>3</td><td>Additional_fixtures_Perspex_slate</td><td>Fixture</td></tr>
+          <tr><td>4</td><td>Additional_fixtures_Plexi shelfs</td><td>Fixture</td></tr>
+          <tr><td>5</td><td>Additional_fixtures_Tall_Perspex_box</td><td>Fixture</td></tr>
+          <tr><td>6</td><td>Additional_fixtures_Wine_box_with_removeable_divider</td><td>Fixture</td></tr>
+          <tr><td>7</td><td>Additional_subscription_Behind_the_till</td><td>Subscription</td></tr>
+          <tr><td>8</td><td>Additional_subscription_Candle_wall</td><td>Subscription</td></tr>
+          <tr><td>9</td><td>Additional_subscription_Card_wall</td><td>Subscription</td></tr>
+          <tr><td>10</td><td>Additional_subscription_Danish_flag_wall</td><td>Subscription</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: ITEMS -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-items">
+    <div class="card">
+      <div class="card-title">Product Construct — Active Items <span class="badge">Item-ItemSpace + tvf_ProductConstructActiveBetween</span></div>
+      <div class="filter-bar">
+        <input class="search-input" placeholder="Search items..." oninput="filterItems(this.value)">
+        <div class="filter-chip active" onclick="filterItemCat('all',this)">All</div>
+        <div class="filter-chip" onclick="filterItemCat('Core',this)">Core</div>
+        <div class="filter-chip" onclick="filterItemCat('Campaign',this)">Campaign</div>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="data-table" id="itemTable">
+        <thead><tr>
+          <th>Item #</th><th>Item Name</th><th>Category L1</th><th>Category L2</th><th>VM Module</th><th>Assortment</th><th>MDQ</th><th>PDQ</th><th>Campaign</th><th>Fixture Cat.</th>
+        </tr></thead>
+        <tbody id="itemTableBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: CAMPAIGNS -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-campaigns">
+    <div class="card">
+      <div class="card-title">Campaign Master <span class="badge">Campaign entity · 11 records</span></div>
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Campaign Rec ID</th><th>Campaign ID</th><th>Campaign Group</th><th>Period</th><th>Status</th></tr></thead>
+        <tbody id="campaignTable"></tbody>
+      </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Campaign Timeline</div>
+      <div id="campaignTimeline" style="padding:10px 0;"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: ASSORTMENT -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-assortment">
+    <div class="card">
+      <div class="card-title">Store Assortment <span class="badge">StoreAssortment entity · Store → Space → Item</span></div>
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Assort ID</th><th>Store ID</th><th>Space ID</th><th>Item #</th><th>Item Name</th><th>Start Date</th><th>End Date</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ASRT001</strong></td><td>BE01009</td><td>1</td><td>1000034</td><td>Folder w. Rose Flower Motif</td><td>2026-01-01</td><td>2026-02-28</td><td style="color:var(--text-secondary);font-size:11px;">Prime window display for New Year</td></tr>
+          <tr><td><strong>ASRT002</strong></td><td>BE01010</td><td>2</td><td>1000041</td><td>Basket Woven Ass 3 Col</td><td>2024-01-15</td><td>2024-02-28</td><td style="color:var(--text-secondary);font-size:11px;">Valentine campaign in left window</td></tr>
+          <tr><td><strong>ASRT003</strong></td><td>BE01011</td><td>3</td><td>1000042</td><td>Woven Placemat Ass 5</td><td>2024-01-01</td><td>2099-02-02</td><td style="color:var(--text-secondary);font-size:11px;">Core assortment on central table</td></tr>
+          <tr><td><strong>ASRT004</strong></td><td>BE01012</td><td>4</td><td>1000044</td><td>Glass F.Shots 6 Ass</td><td>2024-01-01</td><td>2024-02-28</td><td style="color:var(--text-secondary);font-size:11px;">—</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div class="content-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="card">
+        <div class="card-title">Assortment by Space</div>
+        <div id="assortBySpace"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Item ↔ Module ↔ Space Mapping</div>
+        <div id="itemModuleMap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: RANGING -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-ranging">
+    <div class="tabs" style="margin-bottom:14px;">
+      <div class="tab active" onclick="switchRangingTab(this,'active')">Active Ranging</div>
+      <div class="tab" onclick="switchRangingTab(this,'diff')">Ranging Diff</div>
+    </div>
+    <div id="rangingActive" class="card">
+      <div class="card-title">tvf_RangingActiveBetween <span class="badge">2026-03-03 → 2026-09-09</span></div>
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr>
+          <th>Item #</th><th>Item Name</th><th>Category</th><th>Partner</th><th>Store</th><th>Store Name</th><th>Status</th><th>VM Module</th><th>Subscription</th><th>MDQ</th><th>PDQ</th>
+        </tr></thead>
+        <tbody id="rangingActiveBody"></tbody>
+      </table>
+      </div>
+    </div>
+    <div id="rangingDiff" class="card" style="display:none;">
+      <div class="card-title">tvf_RangingDiffBetween <span class="badge">Changes 2026-03-03 → 2026-09-09</span></div>
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr>
+          <th>Item #</th><th>Status</th><th>Item Name</th><th>Category</th><th>Store</th><th>Δ Campaign</th><th>Δ Assortment</th><th>Δ Fixture</th><th>Δ VM Module</th><th>Δ MDQ</th><th>Δ Store Ranging</th>
+        </tr></thead>
+        <tbody id="rangingDiffBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: DATA MODEL -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-data-model">
+    <!-- Summary Strip -->
+    <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);">
+      <div class="kpi"><div class="kpi-label">Entities</div><div class="kpi-value" id="dmEntityCount">8</div><div class="kpi-sub">Master + Transactional</div></div>
+      <div class="kpi"><div class="kpi-label">Total Attributes</div><div class="kpi-value" id="dmAttrCount">—</div><div class="kpi-sub">across all entities</div></div>
+      <div class="kpi"><div class="kpi-label">Key Attributes</div><div class="kpi-value" id="dmKeyCount">—</div><div class="kpi-sub">PK + Composite keys</div></div>
+      <div class="kpi"><div class="kpi-label">Relationships</div><div class="kpi-value" id="dmFkCount">—</div><div class="kpi-sub">Foreign key links</div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="filter-bar" style="margin-bottom:0;">
+        <div class="filter-chip active" onclick="filterEntities('all',this)">All</div>
+        <div class="filter-chip" onclick="filterEntities('Master',this)">Master</div>
+        <div class="filter-chip" onclick="filterEntities('Transactional',this)">Transactional</div>
+        <div class="filter-chip" onclick="filterEntities('Reference',this)">Reference</div>
+        <div class="filter-chip" onclick="filterEntities('Function',this)">Function / View</div>
+      </div>
+      <button class="btn btn-primary" onclick="openEntityModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Entity
+      </button>
+    </div>
+
+    <!-- Entity Cards Grid -->
+    <div id="erDiagram" class="er-container" style="padding:0;display:flex;flex-wrap:wrap;gap:14px;"></div>
+
+    <!-- Selected Entity Detail -->
+    <div class="card" id="entityDetailPanel" style="margin-top:16px;display:none;">
+      <div class="card-title">
+        <span id="entityDetailTitle">Entity Details</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="openEditAttributeModal()">+ Add Attribute</button>
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;color:var(--danger);border-color:var(--danger);" onclick="deleteSelectedEntity()">Delete Entity</button>
+        </div>
+      </div>
+      <div id="entityDetailContent"></div>
+    </div>
+
+    <!-- Relationship Map -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title">Relationship Map <span class="badge">FK references</span></div>
+      <div id="relationshipMap" style="padding:8px 0;"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- VIEW: ENTITY GRAPH -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="view-panel" id="view-graph">
+    <!-- Graph Toolbar -->
+    <div class="card" style="margin-bottom:14px;padding:12px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:13px;font-weight:600;">Entity Relationship Graph</span>
+          <span class="badge" style="font-size:10px;">Interactive · Drag nodes · Scroll to zoom</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="filter-bar" style="margin:0;">
+            <div class="filter-chip active" onclick="graphFilterType('all',this)">All</div>
+            <div class="filter-chip" onclick="graphFilterType('Master',this)">Master</div>
+            <div class="filter-chip" onclick="graphFilterType('Transactional',this)">Transactional</div>
+            <div class="filter-chip" onclick="graphFilterType('Reference',this)">Reference</div>
+            <div class="filter-chip" onclick="graphFilterType('Function',this)">Function</div>
+          </div>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px;"></div>
+          <button class="btn btn-ghost graph-layout-btn active" data-layout="force" onclick="switchGraphLayout('force',this)" style="padding:5px 10px;font-size:11px;">Force</button>
+          <button class="btn btn-ghost graph-layout-btn" data-layout="hierarchy" onclick="switchGraphLayout('hierarchy',this)" style="padding:5px 10px;font-size:11px;">Hierarchy</button>
+          <button class="btn btn-ghost graph-layout-btn" data-layout="circular" onclick="switchGraphLayout('circular',this)" style="padding:5px 10px;font-size:11px;">Circular</button>
+          <div style="width:1px;height:24px;background:var(--border);margin:0 4px;"></div>
+          <button class="btn btn-ghost" onclick="graphResetView()" style="padding:5px 10px;font-size:11px;">Reset</button>
+          <button class="btn btn-ghost" onclick="graphFitAll()" style="padding:5px 10px;font-size:11px;">Fit All</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid" style="grid-template-columns:1fr 320px;">
+      <!-- Canvas -->
+      <div class="card" style="padding:0;overflow:hidden;position:relative;">
+        <canvas id="graphCanvas" style="width:100%;display:block;cursor:grab;"></canvas>
+        <!-- Zoom indicator -->
+        <div id="graphZoomIndicator" style="position:absolute;bottom:12px;left:12px;font-size:10px;color:var(--text-muted);background:var(--bg-card);padding:4px 10px;border-radius:5px;border:1px solid var(--border);">
+          Zoom: 100%
+        </div>
+        <!-- Minimap -->
+        <canvas id="graphMinimap" width="160" height="100" style="position:absolute;bottom:12px;right:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);"></canvas>
+      </div>
+
+      <!-- Right Panel -->
+      <div>
+        <!-- Selected Node Info -->
+        <div class="card" id="graphNodePanel">
+          <div class="card-title">Entity Inspector <span class="badge" id="graphNodeBadge">Click a node</span></div>
+          <div id="graphNodeContent">
+            <div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:12px;">Select an entity node to inspect</div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="card">
+          <div class="card-title">Legend</div>
+          <div id="graphLegend"></div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px;color:var(--text-secondary);">
+              <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="var(--accent)" stroke-width="2"/></svg> FK Relationship
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px;color:var(--text-secondary);">
+              <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4,3"/></svg> Composite FK
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary);">
+              <div style="width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);"></div> Selected node
+            </div>
+          </div>
+        </div>
+
+        <!-- Adjacency List -->
+        <div class="card">
+          <div class="card-title">Connections <span class="badge" id="graphConnCount">—</span></div>
+          <div id="graphAdjList">
+            <div style="text-align:center;padding:16px 0;color:var(--text-muted);font-size:12px;">Showing all FK paths</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- MODAL: ADD SPACE -->
+<div class="modal-overlay" id="modalSpace" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal">
+    <div class="modal-title">Add Store Space</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Store ID</label><input class="form-input" value="BE01009" readonly></div>
+      <div class="form-group"><label class="form-label">VM Module</label>
+        <select class="form-select">
+          <option>VM-WALL-001 (Wall · XXXS)</option><option>VM-TABLE-001 (Table · XS)</option>
+          <option>VM-BIN-001 (Bin · M)</option><option>VM-PLATFORM-001 (Platform · M)</option>
+          <option>VM-WALL-002 (Wall · L)</option><option>VM-WALL-003 (Wall · XXS)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Location Description</label><input class="form-input" placeholder="e.g. P4 - Back Wall Right"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Dimensions</label><input class="form-input" placeholder="e.g. 2.5m × 3m"></div>
+      <div class="form-group"><label class="form-label">Fixture Count</label><input class="form-input" type="number" placeholder="2"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Start Date</label><input class="form-input" type="date" value="2026-02-16"></div>
+      <div class="form-group"><label class="form-label">End Date</label><input class="form-input" type="date" value="2099-01-01"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="closeAllModals()">Create Space</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD ENTITY -->
+<div class="modal-overlay" id="modalEntity" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal" style="width:660px;">
+    <div class="modal-title">Add New Entity</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Entity Name</label><input class="form-input" id="newEntityName" placeholder="e.g. StorePlanogram"></div>
+      <div class="form-group"><label class="form-label">Entity Type</label>
+        <select class="form-select" id="newEntityType">
+          <option value="Master">Master Data</option>
+          <option value="Transactional">Transactional</option>
+          <option value="Reference">Reference / Lookup</option>
+          <option value="Function">Function / View</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Source System</label>
+        <select class="form-select" id="newEntitySource">
+          <option>AX / Dynamics</option><option>SharePoint</option><option>Oracle</option><option>BI Datamart</option><option>Manual / Hardcoded</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Color</label>
+        <select class="form-select" id="newEntityColor">
+          <option value="var(--cat-wall)">Blue</option><option value="var(--cat-table)">Purple</option>
+          <option value="var(--cat-bin)">Green</option><option value="var(--cat-platform)">Orange</option>
+          <option value="var(--cat-fridge)">Cyan</option><option value="var(--cat-behind)">Pink</option>
+          <option value="var(--cat-campaign)">Yellow</option><option value="var(--cat-core)">Teal</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="newEntityDesc" placeholder="Brief description of this entity"></div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <label class="form-label" style="margin-bottom:0;font-size:12px;font-weight:600;">Attributes</label>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;" onclick="addAttrRow()">+ Add Row</button>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="attr-table" style="min-width:580px;">
+        <thead><tr><th style="width:30%">Attribute Name</th><th style="width:20%">Data Type</th><th style="width:15%">Key Type</th><th style="width:20%">FK Reference</th><th style="width:15%">Actions</th></tr></thead>
+        <tbody id="newAttrRows">
+          <tr>
+            <td><input class="form-input" style="padding:5px 8px;font-size:11px;" placeholder="e.g. planogramID" value=""></td>
+            <td><select class="form-select" style="padding:5px 8px;font-size:11px;"><option>INT</option><option>VARCHAR</option><option>DATE</option><option>DATETIME</option><option>DECIMAL</option><option>BOOLEAN</option><option>TEXT</option></select></td>
+            <td><select class="form-select" style="padding:5px 8px;font-size:11px;" onchange="onKeyTypeChange(this)"><option value="">—</option><option value="PK">PK</option><option value="CPK">Composite PK</option><option value="FK">FK</option><option value="UK">Unique</option></select></td>
+            <td><select class="form-select" style="padding:5px 8px;font-size:11px;" disabled><option value="">—</option></select></td>
+            <td><button class="attr-action-btn danger" onclick="this.closest('tr').remove()" style="opacity:1">✕</button></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewEntity()">Create Entity</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD ATTRIBUTE TO EXISTING ENTITY -->
+<div class="modal-overlay" id="modalAttribute" onclick="if(event.target===this)closeAllModals()">
+  <div class="modal" style="width:560px;">
+    <div class="modal-title" id="addAttrModalTitle">Add Attribute</div>
+    <div class="form-group"><label class="form-label">Attribute Name</label><input class="form-input" id="editAttrName" placeholder="e.g. layoutVersion"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data Type</label>
+        <select class="form-select" id="editAttrType">
+          <option>VARCHAR</option><option>INT</option><option>DATE</option><option>DATETIME</option><option>DECIMAL</option><option>BOOLEAN</option><option>TEXT</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Key Type</label>
+        <select class="form-select" id="editAttrKey" onchange="onEditKeyChange(this)">
+          <option value="">None</option><option value="PK">Primary Key</option><option value="CPK">Composite PK</option><option value="FK">Foreign Key</option><option value="UK">Unique Key</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" id="editFkRefGroup" style="display:none;">
+      <label class="form-label">FK References (Entity)</label>
+      <select class="form-select" id="editFkRef"><option value="">—</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Nullable</label>
+      <select class="form-select" id="editAttrNullable"><option value="true">Yes</option><option value="false">No (Required)</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewAttribute()">Add Attribute</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA — Based on actual FTC Space_Modelling.xlsx entities
+// ═══════════════════════════════════════════════════════════
+
+const stores = [
+  { id:'BE01009', partner:'BE01', name:'Oostende Kapellestraat', ownership:'O&O', nsqm:206, gsqm:720, status:'Open', type:'Street', country:'BE', zip:'8400', address:'Kapellestraat 30-32', opened:'2016-06-10', ground:130, first:120, other:90, safety:2, approved:true },
+];
+
+const modules = [
+  { id:1, code:'VM-WALL-001', cat:'Wall', size:'XXXS', assort:'Fixed', mdq:12, pdq:24, ax:'AX-WALL-001', color:'var(--cat-wall)', icon:'▐' },
+  { id:2, code:'VM-TABLE-001', cat:'Table', size:'XS', assort:'Campaign-Event', mdq:8, pdq:16, ax:'AX-TABLE-001', color:'var(--cat-table)', icon:'▬' },
+  { id:3, code:'VM-BIN-001', cat:'Bin', size:'M', assort:'Campaign-Seasonal', mdq:6, pdq:12, ax:'AX-BIN-001', color:'var(--cat-bin)', icon:'▣' },
+  { id:4, code:'VM-PLATFORM-001', cat:'Platform', size:'M', assort:'Campaign-Theme', mdq:10, pdq:20, ax:'AX-PLATFORM-001', color:'var(--cat-platform)', icon:'▭' },
+  { id:5, code:'VM-WALL-002', cat:'Wall', size:'L', assort:'Core', mdq:8, pdq:16, ax:'AX-WALL-002', color:'var(--cat-wall)', icon:'▐' },
+  { id:6, code:'VM-WALL-003', cat:'Wall', size:'XXS', assort:'Core-Direct', mdq:9, pdq:17, ax:'AX-WALL-003', color:'var(--cat-wall)', icon:'▐' },
+  { id:7, code:'VM-WALL-004', cat:'Wall', size:'XL', assort:'Not defined', mdq:10, pdq:18, ax:'AX-WALL-004', color:'var(--cat-wall)', icon:'▐' },
+  { id:8, code:'VM-WALL-005', cat:'Wall', size:'XXL', assort:'Campaign-Terminal', mdq:11, pdq:19, ax:'AX-WALL-005', color:'var(--cat-wall)', icon:'▐' },
+  { id:9, code:'VM-WALL-006', cat:'Wall', size:'S', assort:'Core-Terminal', mdq:12, pdq:20, ax:'AX-WALL-006', color:'var(--cat-wall)', icon:'▐' },
+];
+
+const storeSpaces = [
+  { spaceId:1, storeId:'BE01009', moduleId:1, vmModule:'VM-WALL-001', loc:'P1 - Right Wall', dim:'2.5m × 3m', count:4, start:'2024-01-01', end:'2099-01-01' },
+  { spaceId:2, storeId:'BE01010', moduleId:2, vmModule:'VM-TABLE-001', loc:'P2 - Left Window', dim:'3m × 2m × 0.8m', count:2, start:'2024-01-01', end:'2099-01-02' },
+  { spaceId:3, storeId:'BE01011', moduleId:2, vmModule:'VM-TABLE-001', loc:'P3 - Central Table', dim:'1.5m × 1.5m × 0.9m', count:1, start:'2024-01-01', end:'2099-01-03' },
+  { spaceId:4, storeId:'BE01012', moduleId:1, vmModule:'VM-WALL-001', loc:'Main Wall - Left', dim:'2m × 2.5m', count:3, start:'2024-01-01', end:'2099-01-04' },
+  { spaceId:5, storeId:'BE01013', moduleId:4, vmModule:'VM-PLATFORM-001', loc:'Entrance Platform', dim:'4m × 3m × 0.4m', count:1, start:'2024-01-01', end:'2099-01-05' },
+];
+
+const items = [
+  { num:1000034, name:'Folder w. Rose Flower Motif', desc:'Home decoration vase', cat1:'Home Decor', cat2:'Vases', campaign:'2026-01', mdq:4, pdq:12, moduleId:1, start:'2024-01-01', end:'2024-02-28' },
+  { num:1000041, name:'Basket Woven Ass 3 Col', desc:'Valentine heart cushion', cat1:'Textiles', cat2:'Cushions', campaign:'2026-02', mdq:6, pdq:18, moduleId:2, start:'2024-01-15', end:'2024-02-28' },
+  { num:1000042, name:'Woven Placemat Ass 5', desc:'Scandinavian storage box', cat1:'Storage', cat2:'Boxes', campaign:null, mdq:3, pdq:9, moduleId:1, start:'2023-01-01', end:null },
+  { num:1000044, name:'Glass F.Shots 6 Ass', desc:'Ceramic bunny decoration', cat1:'Seasonal', cat2:'Easter', campaign:'2026-10', mdq:8, pdq:24, moduleId:3, start:'2024-02-15', end:'2024-04-15' },
+];
+
+const productConstruct = [
+  { num:3024817, name:'Screen Protection Glass iPhone 6/7/8', cat1:'Media', cat2:'Screen protection', assort:'Core', theme:'Future Core', fixture:'Fixed-Wall-Media', vm:'Fixed-Wall-Media-S', mdq:4, pdq:0, units:36 },
+  { num:3026694, name:'Clips for Bag 10 Pcs 2 Sizes Grey', cat1:'Kitchen', cat2:'Storage/containers', assort:'Core', theme:'Future Core', fixture:'Fixed-Wall-Kitchen', vm:'Fixed-Wall-Kitchen-XXS', mdq:null, pdq:null, units:72 },
+  { num:3031985, name:'Container Round Grey Stoneware', cat1:'Kitchen', cat2:'Storage/containers', assort:'Core', theme:'Future Core', fixture:'Fixed-Table-Kitchen', vm:'Fixed-Table-Kitchen-XXS', mdq:null, pdq:null, units:20 },
+  { num:3032990, name:'Wrapping Paper Pink/Red 70×300cm', cat1:'Office', cat2:'Wrapping paper', assort:'Core', theme:'Future Core', fixture:'Fixed-Wall-Party', vm:'Fixed-Wall-Party-S', mdq:null, pdq:null, units:24 },
+  { num:3032993, name:'Wrapping Paper Glitter 70×200cm', cat1:'Office', cat2:'Wrapping paper', assort:'Core', theme:'Future Core', fixture:'Fixed-Wall-Party', vm:'Fixed-Wall-Party-S', mdq:null, pdq:null, units:24 },
+  { num:3019921, name:'Drinking Bottle Stainless Steel', cat1:'Kitchen', cat2:'Drinking bottles', assort:'Core', theme:'Future Core', fixture:'Fixed-Table-Kitchen', vm:'Fixed-Table-Kitchen-XXS', mdq:null, pdq:null, units:12 },
+];
+
+const campaigns = [
+  { recId:'5637163495', id:'23019', group:'2301-02' },
+  { recId:'5637163496', id:'23112A', group:'2311-12' },
+  { recId:'5637163497', id:'24078', group:'2407-08' },
+  { recId:'5637163498', id:'24111B', group:'2411-12' },
+  { recId:'5637163499', id:'25112A', group:'2511-12' },
+  { recId:'5637163500', id:'24091', group:'2409-10' },
+  { recId:'5637163501', id:'23078', group:'2307-08' },
+  { recId:'5637163502', id:'23111A', group:'2311-12' },
+  { recId:'5637163503', id:'24051', group:'2405-06' },
+  { recId:'5637163504', id:'24111A', group:'2411-12' },
+  { recId:'5637163505', id:'2601', group:'2411-12' },
+];
+
+const rangingActive = [
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FI01', storeNum:'FI01031', storeName:'Raisio Mylly', status:'Open', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FI01', storeNum:'FI01034', storeName:'Espoo Iso Omena 2', status:'Open', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FI01', storeNum:'FI01035', storeName:'Lempäälä IdeaPark', status:'Open', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FI01', storeNum:'FI01010', storeName:'Lahti Trio', status:'Open', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FI01', storeNum:'FI01008', storeName:'Kuusankoski Veturi', status:'Closing', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FI01', storeNum:'FI01007', storeName:'Turku Hansa', status:'Open', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FR01', storeNum:'FR01005', storeName:'Toulon Valette du Var', status:'Open', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+  { num:2401356, name:'Ice Tea Peach 1/2L Germany', cat:'Food', partner:'FR01', storeNum:'FR01007', storeName:'Clermont Ferrand Jaude 2', status:'Open', vm:'Fridge-XXS', sub:'XS', mdq:72, pdq:0 },
+];
+
+const rangingDiff = [
+  { num:3024817, status:'Removed', name:'Screen Protection Glass iPhone 6/7/8', cat:'Media', storeName:'München Leopoldstrasse', dCamp:1, dAssort:1, dFixture:1, dVm:1, dMdq:1, dStoreRanging:'Removed' },
+  { num:3024817, status:'Removed', name:'Screen Protection Glass iPhone 6/7/8', cat:'Media', storeName:'Copenhagen Frederiksborggade', dCamp:1, dAssort:1, dFixture:1, dVm:1, dMdq:1, dStoreRanging:'Removed' },
+  { num:3024817, status:'Removed', name:'Screen Protection Glass iPhone 6/7/8', cat:'Media', storeName:'Barcelona Consejo del Ciento', dCamp:1, dAssort:1, dFixture:1, dVm:1, dMdq:1, dStoreRanging:'Removed' },
+  { num:3024817, status:'Removed', name:'Screen Protection Glass iPhone 6/7/8', cat:'Media', storeName:'Athens Ermou', dCamp:1, dAssort:1, dFixture:1, dVm:1, dMdq:1, dStoreRanging:'Removed' },
+  { num:1000680, status:'Changed', name:'Woven Basket Black', cat:'Home', storeName:'Aalst Kattestraat', dCamp:0, dAssort:0, dFixture:0, dVm:0, dMdq:0, dStoreRanging:'Unchanged' },
+];
+
+// ═══════════════════════════════════════════════════════════
+// FLOOR PLAN ZONES — mapped to StoreSpace
+// ═══════════════════════════════════════════════════════════
+const floorZones = [
+  { spaceId:1, label:'P1 - Right Wall', sub:'VM-WALL-001 · ×4', color:'var(--cat-wall)', x:65, y:4, w:32, h:35 },
+  { spaceId:2, label:'P2 - Left Window', sub:'VM-TABLE-001 · ×2', color:'var(--cat-table)', x:3, y:4, w:28, h:30 },
+  { spaceId:3, label:'P3 - Central Table', sub:'VM-TABLE-001 · ×1', color:'var(--cat-table)', x:34, y:20, w:28, h:25 },
+  { spaceId:4, label:'Main Wall - Left', sub:'VM-WALL-001 · ×3', color:'var(--cat-wall)', x:3, y:38, w:28, h:30 },
+  { spaceId:5, label:'Entrance Platform', sub:'VM-PLATFORM-001 · ×1', color:'var(--cat-platform)', x:34, y:50, w:28, h:20 },
+];
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+const fp = document.getElementById('floorPlan');
+floorZones.forEach((z,i) => {
+  const el = document.createElement('div');
+  el.className = 'zone';
+  el.style.cssText = `left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%;background:${z.color}22;animation:fadeIn 0.4s ease ${i*0.08}s both;`;
+  el.innerHTML = `<span class="zone-label">${z.label}</span><span class="zone-sub">${z.sub}</span>`;
+  el.onclick = () => selectZone(z, el);
+  el.onmouseenter = e => showTooltip(e, z);
+  el.onmouseleave = hideTooltip;
+  fp.appendChild(el);
+});
+
+// Legend
+const legendEl = document.getElementById('legend');
+[{n:'Wall',c:'var(--cat-wall)'},{n:'Table',c:'var(--cat-table)'},{n:'Bin',c:'var(--cat-bin)'},{n:'Platform',c:'var(--cat-platform)'},{n:'Fridge',c:'var(--cat-fridge)'},{n:'Behind-till',c:'var(--cat-behind)'}].forEach(l => {
+  legendEl.innerHTML += `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-secondary)"><div style="width:9px;height:9px;border-radius:2px;background:${l.c}"></div>${l.n}</div>`;
+});
+
+// Store Space Table
+const ssBody = document.getElementById('storeSpaceTable');
+storeSpaces.forEach(s => {
+  const mod = modules.find(m => m.id === s.moduleId);
+  ssBody.innerHTML += `<tr>
+    <td>${s.spaceId}</td>
+    <td><span class="dot" style="background:${mod?.color||'var(--text-muted)'}"></span>${s.vmModule||'—'}</td>
+    <td>${mod?.cat||'—'}</td>
+    <td>${s.loc}</td>
+    <td>${s.dim}</td>
+    <td>${s.count}</td>
+    <td>${s.start}</td>
+    <td>${s.end}</td>
+  </tr>`;
+});
+
+// Module Distribution Bars
+const modDist = document.getElementById('moduleDistBars');
+const catCounts = {};
+storeSpaces.forEach(s => { const m = modules.find(x=>x.id===s.moduleId); if(m) catCounts[m.cat] = (catCounts[m.cat]||0) + s.count; });
+const maxCount = Math.max(...Object.values(catCounts));
+Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).forEach(([cat,cnt]) => {
+  const mod = modules.find(m=>m.cat===cat);
+  modDist.innerHTML += `<div class="perf-row">
+    <div class="perf-label">${cat}</div>
+    <div class="perf-bar-bg"><div class="perf-bar" style="width:${cnt/maxCount*100}%;background:${mod?.color||'#666'}"></div></div>
+    <div class="perf-val">${cnt}</div>
+  </div>`;
+});
+
+// Module Grid
+const moduleGrid = document.getElementById('moduleGrid');
+function renderModules(filter='all') {
+  moduleGrid.innerHTML = '';
+  modules.filter(m => filter==='all' || m.cat===filter).forEach(m => {
+    moduleGrid.innerHTML += `<div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:${m.color}22;color:${m.color}">${m.icon}</div>
+        <div><div class="module-name">${m.code}</div><div class="module-cat">${m.cat} · ${m.size} · ${m.assort}</div></div>
+      </div>
+      <div class="module-stats">
+        <div class="module-stat"><div class="module-stat-label">MDQ</div><div class="module-stat-value">${m.mdq}</div></div>
+        <div class="module-stat"><div class="module-stat-label">PDQ</div><div class="module-stat-value">${m.pdq}</div></div>
+        <div class="module-stat"><div class="module-stat-label">AX Code</div><div class="module-stat-value" style="font-size:10px">${m.ax}</div></div>
+        <div class="module-stat"><div class="module-stat-label">Module ID</div><div class="module-stat-value">${m.id}</div></div>
+      </div>
+    </div>`;
+  });
+}
+renderModules();
+
+// Item Table
+const itemBody = document.getElementById('itemTableBody');
+function renderItems(filter='all', search='') {
+  itemBody.innerHTML = '';
+  const allItems = [...items.map(it=>({...it,source:'item'})), ...productConstruct.map(p=>({num:p.num,name:p.name,cat1:p.cat1,cat2:p.cat2,campaign:null,mdq:p.mdq,pdq:p.pdq,moduleId:null,assort:p.assort,theme:p.theme,fixture:p.fixture,vm:p.vm,source:'pc'}))];
+  allItems.filter(it => {
+    if(filter!=='all') { const isCore = (it.assort||it.campaign||'').includes('Core') ? 'Core' : 'Campaign'; if(isCore!==filter) return false; }
+    if(search && !it.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  }).forEach(it => {
+    const assortBadge = it.assort === 'Core' ? '<span class="badge-pill badge-core">Core</span>' : it.campaign ? `<span class="badge-pill badge-campaign">${it.campaign}</span>` : '<span class="badge-pill badge-core">Core</span>';
+    itemBody.innerHTML += `<tr>
+      <td>${it.num}</td><td>${it.name}</td><td>${it.cat1||'—'}</td><td>${it.cat2||'—'}</td>
+      <td>${it.vm||it.source==='item'?(modules.find(m=>m.id===it.moduleId)?.code||'—'):'—'}</td>
+      <td>${assortBadge}</td><td>${it.mdq||'—'}</td><td>${it.pdq||'—'}</td>
+      <td>${it.campaign||'—'}</td><td style="font-size:11px">${it.fixture||'—'}</td>
+    </tr>`;
+  });
+}
+renderItems();
+
+// Campaign Table
+const campBody = document.getElementById('campaignTable');
+campaigns.forEach(c => {
+  const year = c.group.substring(0,2);
+  const isCurrent = c.group.startsWith('26') || c.group.startsWith('25');
+  campBody.innerHTML += `<tr>
+    <td style="font-family:monospace;font-size:11px">${c.recId}</td>
+    <td><strong>${c.id}</strong></td>
+    <td>${c.group}</td>
+    <td>20${year}</td>
+    <td>${isCurrent?'<span class="badge-pill badge-open">Active</span>':'<span class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-muted)">Past</span>'}</td>
+  </tr>`;
+});
+
+// Campaign Timeline
+const timeline = document.getElementById('campaignTimeline');
+const groups = [...new Set(campaigns.map(c=>c.group))].sort();
+groups.forEach(g => {
+  const campsInGroup = campaigns.filter(c=>c.group===g);
+  const year = '20'+g.substring(0,2);
+  const months = g.substring(2);
+  timeline.innerHTML += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+    <div style="width:70px;font-size:11px;color:var(--text-muted);text-align:right">${g}</div>
+    <div style="flex:1;height:24px;background:var(--bg-tertiary);border-radius:4px;position:relative;display:flex;align-items:center;padding:0 8px;gap:6px">
+      ${campsInGroup.map(c=>`<span style="font-size:10px;padding:2px 6px;background:var(--accent-dim);border-radius:3px;color:var(--accent)">${c.id}</span>`).join('')}
+    </div>
+    <div style="width:40px;font-size:10px;color:var(--text-muted)">${year}</div>
+  </div>`;
+});
+
+// Ranging Active
+const raBody = document.getElementById('rangingActiveBody');
+rangingActive.forEach(r => {
+  const statusClass = r.status==='Open'?'badge-open':r.status==='Closing'?'badge-closing':'badge-closed';
+  raBody.innerHTML += `<tr>
+    <td>${r.num}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r.name}</td>
+    <td>${r.cat}</td><td>${r.partner}</td><td style="font-family:monospace;font-size:11px">${r.storeNum}</td>
+    <td>${r.storeName}</td><td><span class="badge-pill ${statusClass}">${r.status}</span></td>
+    <td style="font-size:11px">${r.vm}</td><td>${r.sub}</td><td>${r.mdq}</td><td>${r.pdq}</td>
+  </tr>`;
+});
+
+// Ranging Diff
+const rdBody = document.getElementById('rangingDiffBody');
+rangingDiff.forEach(r => {
+  const sClass = r.status==='Removed'?'badge-removed':r.status==='Changed'?'badge-changed':'badge-added';
+  const diffDot = v => v ? '<span style="color:var(--warning)">●</span>' : '<span style="color:var(--text-muted)">—</span>';
+  rdBody.innerHTML += `<tr>
+    <td>${r.num}</td><td><span class="badge-pill ${sClass}">${r.status}</span></td>
+    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r.name}</td><td>${r.cat}</td>
+    <td style="font-size:11px">${r.storeName}</td>
+    <td style="text-align:center">${diffDot(r.dCamp)}</td><td style="text-align:center">${diffDot(r.dAssort)}</td>
+    <td style="text-align:center">${diffDot(r.dFixture)}</td><td style="text-align:center">${diffDot(r.dVm)}</td>
+    <td style="text-align:center">${diffDot(r.dMdq)}</td>
+    <td><span class="badge-pill ${r.dStoreRanging==='Removed'?'badge-removed':'badge-open'}">${r.dStoreRanging}</span></td>
+  </tr>`;
+});
+
+// Assortment by Space
+const abs = document.getElementById('assortBySpace');
+[{sp:1,items:['Folder w. Rose Flower Motif'],mod:'VM-WALL-001'},{sp:2,items:['Basket Woven Ass 3 Col'],mod:'VM-TABLE-001'},{sp:3,items:['Woven Placemat Ass 5'],mod:'VM-TABLE-001'},{sp:4,items:['Glass F.Shots 6 Ass'],mod:'VM-WALL-001'}].forEach(s => {
+  abs.innerHTML += `<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg-tertiary);border-radius:6px;margin-bottom:6px">
+    <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--accent-dim);border-radius:6px;font-size:12px;font-weight:600;color:var(--accent)">${s.sp}</div>
+    <div style="flex:1"><div style="font-size:12px;font-weight:500">${s.items.join(', ')}</div><div style="font-size:10px;color:var(--text-muted)">${s.mod}</div></div>
+  </div>`;
+});
+
+// Item Module Map
+const imm = document.getElementById('itemModuleMap');
+items.forEach(it => {
+  const mod = modules.find(m=>m.id===it.moduleId);
+  imm.innerHTML += `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
+    <span style="color:var(--text-secondary);width:60px">#${it.num}</span>
+    <span style="flex:1">${it.name}</span>
+    <span style="color:var(--accent)">→</span>
+    <span style="font-weight:500">${mod?.code||'—'}</span>
+  </div>`;
+});
+
+// ═══════════════════════════════════════════════════════════
+// DATA MODEL ENGINE — Interactive Entity Management
+// ═══════════════════════════════════════════════════════════
+const dataModelEntities = [
+  { id:'e1', name:'Store', type:'Master', color:'var(--cat-wall)', source:'AX / Dynamics', desc:'Physical retail locations with format and ownership',
+    attrs:[
+      {n:'Store ID',dt:'VARCHAR',key:'PK',fk:'',nullable:false},
+      {n:'partnerCode',dt:'VARCHAR',key:'',fk:'',nullable:false},
+      {n:'lastUpdated',dt:'DATETIME',key:'',fk:'',nullable:true},
+      {n:'storeName',dt:'VARCHAR',key:'',fk:'',nullable:false},
+      {n:'ownership',dt:'VARCHAR',key:'',fk:'',nullable:false},
+      {n:'openingDate',dt:'DATE',key:'',fk:'',nullable:true},
+      {n:'nsqm',dt:'DECIMAL',key:'',fk:'',nullable:true},
+      {n:'gsqm',dt:'DECIMAL',key:'',fk:'',nullable:true},
+      {n:'storeStatus',dt:'VARCHAR',key:'',fk:'',nullable:false},
+      {n:'locationType',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'safetyStock',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'areaData.groundFloor',dt:'DECIMAL',key:'',fk:'',nullable:true},
+      {n:'areaData.basement',dt:'DECIMAL',key:'',fk:'',nullable:true},
+      {n:'areaData.firstFloor',dt:'DECIMAL',key:'',fk:'',nullable:true},
+      {n:'layoutApproval',dt:'BOOLEAN',key:'',fk:'',nullable:true},
+      {n:'layoutApprovalDate',dt:'DATE',key:'',fk:'',nullable:true},
+    ]},
+  { id:'e2', name:'ModuleMaster', type:'Master', color:'var(--cat-table)', source:'AX / Dynamics', desc:'VM modules with categories, sizes, and capacity (MDQ/PDQ)',
+    attrs:[
+      {n:'moduleID',dt:'INT',key:'PK',fk:'',nullable:false},
+      {n:'VM Module',dt:'VARCHAR',key:'UK',fk:'',nullable:false},
+      {n:'moduleCategory',dt:'VARCHAR',key:'',fk:'',nullable:false},
+      {n:'moduleSize',dt:'VARCHAR',key:'',fk:'ModuleSize',nullable:true},
+      {n:'assortmentCategory',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'MDQ',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'PDQ',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'AXModuleCode',dt:'VARCHAR',key:'UK',fk:'',nullable:false},
+      {n:'Fixture Category',dt:'VARCHAR',key:'',fk:'',nullable:true},
+    ]},
+  { id:'e3', name:'StoreSpace', type:'Transactional', color:'var(--cat-platform)', source:'AX / Dynamics', desc:'Physical spaces within stores allocated to modules',
+    attrs:[
+      {n:'spaceID',dt:'INT',key:'PK',fk:'',nullable:false},
+      {n:'storeID',dt:'VARCHAR',key:'FK',fk:'Store',nullable:false},
+      {n:'moduleID',dt:'INT',key:'FK',fk:'ModuleMaster',nullable:false},
+      {n:'VM module',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'locationDescription',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'dimensions',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'count',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'startDate',dt:'DATE',key:'CPK',fk:'',nullable:false},
+      {n:'endDate',dt:'DATE',key:'',fk:'',nullable:true},
+    ]},
+  { id:'e4', name:'Item-ItemSpace', type:'Transactional', color:'var(--cat-bin)', source:'AX / Dynamics', desc:'Items with categories and campaign associations',
+    attrs:[
+      {n:'itemNumber',dt:'INT',key:'CPK',fk:'',nullable:false},
+      {n:'moduleID',dt:'INT',key:'CPK',fk:'ModuleMaster',nullable:false},
+      {n:'itemName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'itemDescription',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'category',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'subCategory',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'Campaign',dt:'VARCHAR',key:'FK',fk:'Campaign',nullable:true},
+      {n:'itemMDQ',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'itemPDQ',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'startDate',dt:'DATE',key:'CPK',fk:'',nullable:false},
+      {n:'endDate',dt:'DATE',key:'',fk:'',nullable:true},
+      {n:'Commercial Theme',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'VM theme',dt:'VARCHAR',key:'',fk:'',nullable:true},
+    ]},
+  { id:'e5', name:'Campaign', type:'Master', color:'var(--cat-campaign)', source:'AX / Dynamics', desc:'Campaign master with grouping',
+    attrs:[
+      {n:'CampaignRecId',dt:'INT',key:'PK',fk:'',nullable:false},
+      {n:'CampaignId',dt:'VARCHAR',key:'UK',fk:'',nullable:false},
+      {n:'CampaignGroup',dt:'VARCHAR',key:'',fk:'',nullable:false},
+    ]},
+  { id:'e6', name:'StoreAssortment', type:'Transactional', color:'var(--cat-fridge)', source:'AX / Dynamics', desc:'Products available in specific store spaces',
+    attrs:[
+      {n:'assortID',dt:'VARCHAR',key:'PK',fk:'',nullable:false},
+      {n:'storeID',dt:'VARCHAR',key:'FK',fk:'Store',nullable:false},
+      {n:'Store spaceID',dt:'INT',key:'FK',fk:'StoreSpace',nullable:false},
+      {n:'itemNumber',dt:'INT',key:'FK',fk:'Item-ItemSpace',nullable:false},
+      {n:'startDate',dt:'DATE',key:'',fk:'',nullable:false},
+      {n:'endDate',dt:'DATE',key:'',fk:'',nullable:true},
+      {n:'notes',dt:'TEXT',key:'',fk:'',nullable:true},
+    ]},
+  { id:'e7', name:'SpaceModule', type:'Reference', color:'var(--cat-behind)', source:'SharePoint', desc:'Fixture category to space module mapping',
+    attrs:[
+      {n:'SpaceModuleId',dt:'INT',key:'PK',fk:'',nullable:false},
+      {n:'SpaceModuleName',dt:'VARCHAR',key:'',fk:'',nullable:false},
+    ]},
+  { id:'e8', name:'ModuleSize', type:'Reference', color:'var(--text-secondary)', source:'Manual / Hardcoded', desc:'Hardcoded size codes for modules',
+    attrs:[
+      {n:'ModuleSizeId',dt:'INT',key:'PK',fk:'',nullable:false},
+      {n:'ModuleSizeCode',dt:'VARCHAR',key:'UK',fk:'',nullable:false},
+    ]},
+  { id:'e9', name:'tvf_ProductConstructActiveBetween', type:'Function', color:'var(--cat-core)', source:'BI Datamart', desc:'Active product construct records between date range',
+    attrs:[
+      {n:'ItemNumber',dt:'INT',key:'CPK',fk:'Item-ItemSpace',nullable:false},
+      {n:'StartDate',dt:'DATE',key:'CPK',fk:'',nullable:false},
+      {n:'EndDate',dt:'DATE',key:'',fk:'',nullable:false},
+      {n:'ItemName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'CategoryMainLevel1',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'CategoryMainLevel2',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'CampaignGroup',dt:'VARCHAR',key:'FK',fk:'Campaign',nullable:true},
+      {n:'AssortmentClassName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'CommercialThemeName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'FixtureCategoryName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'VmModuleName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'ItemKey',dt:'INT',key:'',fk:'',nullable:true},
+    ]},
+  { id:'e10', name:'tvf_RangingActiveBetween', type:'Function', color:'var(--info)', source:'BI Datamart', desc:'Ranged item-store combinations active between dates',
+    attrs:[
+      {n:'ItemNumber',dt:'INT',key:'CPK',fk:'Item-ItemSpace',nullable:false},
+      {n:'StoreNumber',dt:'VARCHAR',key:'CPK',fk:'Store',nullable:false},
+      {n:'StartDate',dt:'DATE',key:'CPK',fk:'',nullable:false},
+      {n:'EndDate',dt:'DATE',key:'',fk:'',nullable:false},
+      {n:'ItemName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'VmModuleName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'ModuleSubscription',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'MDQ',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'PDQ',dt:'INT',key:'',fk:'',nullable:true},
+      {n:'PartnerCode',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'StoreName',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'StoreStatus',dt:'VARCHAR',key:'',fk:'',nullable:true},
+      {n:'FlagBlockedForCountry',dt:'BOOLEAN',key:'',fk:'',nullable:true},
+      {n:'FlagNotPlannedForCountry',dt:'BOOLEAN',key:'',fk:'',nullable:true},
+    ]},
+];
+
+let selectedEntityId = null;
+let entityCounter = dataModelEntities.length;
+
+function getEntityColors() {
+  return ['var(--cat-wall)','var(--cat-table)','var(--cat-bin)','var(--cat-platform)','var(--cat-fridge)','var(--cat-behind)','var(--cat-campaign)','var(--cat-core)','var(--info)','var(--danger)'];
+}
+
+function renderDataModel(filter='all') {
+  const container = document.getElementById('erDiagram');
+  container.innerHTML = '';
+  const filtered = filter === 'all' ? dataModelEntities : dataModelEntities.filter(e => e.type === filter);
+
+  filtered.forEach(e => {
+    const pkAttrs = e.attrs.filter(a => a.key === 'PK');
+    const cpkAttrs = e.attrs.filter(a => a.key === 'CPK');
+    const fkAttrs = e.attrs.filter(a => a.key === 'FK');
+    const ukAttrs = e.attrs.filter(a => a.key === 'UK');
+    const keyAttrs = [...pkAttrs, ...cpkAttrs];
+    const hasComposite = cpkAttrs.length >= 2;
+
+    let attrsHtml = e.attrs.map(a => {
+      let keyBadge = '';
+      if (a.key === 'PK') keyBadge = '<span class="er-attr-key pk">PK</span>';
+      else if (a.key === 'CPK') keyBadge = '<span class="er-attr-key cpk">CPK</span>';
+      else if (a.key === 'FK') keyBadge = `<span class="er-attr-key fk">FK→${a.fk}</span>`;
+      else if (a.key === 'UK') keyBadge = '<span class="er-attr-key uk">UK</span>';
+      return `<div class="er-attr"><span class="er-attr-name">${a.n}</span><span class="er-attr-type">${a.dt}</span>${keyBadge}</div>`;
+    }).join('');
+
+    const keyLabel = hasComposite
+      ? `Composite: ${cpkAttrs.map(a=>a.n).join(' + ')}`
+      : pkAttrs.length ? `PK: ${pkAttrs[0].n}` : 'No key defined';
+
+    const isSelected = selectedEntityId === e.id;
+
+    container.innerHTML += `<div class="er-card${isSelected?' selected':''}" onclick="selectEntity('${e.id}')" id="ercard-${e.id}">
+      <div class="er-card-header">
+        <div class="er-card-icon" style="background:${e.color}22;color:${e.color}">${e.name.charAt(0)}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="er-card-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.name}</div>
+          <div class="er-card-type">${e.type} · ${e.attrs.length} attrs</div>
+        </div>
+      </div>
+      <div class="er-card-body">${attrsHtml}</div>
+      <div class="er-card-footer">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">${keyLabel}</span>
+        <span style="display:flex;gap:6px;">
+          ${pkAttrs.length?'<span class="key-indicator has-pk">PK</span>':''}
+          ${hasComposite?'<span class="key-indicator has-cpk">CPK</span>':''}
+          ${fkAttrs.length?'<span class="key-indicator has-fk">FK×'+fkAttrs.length+'</span>':''}
+        </span>
+      </div>
+    </div>`;
+  });
+
+  updateDataModelKPIs();
+  renderRelationshipMap();
+}
+
+function updateDataModelKPIs() {
+  document.getElementById('dmEntityCount').textContent = dataModelEntities.length;
+  const totalAttrs = dataModelEntities.reduce((s,e) => s + e.attrs.length, 0);
+  document.getElementById('dmAttrCount').textContent = totalAttrs;
+  const keyAttrs = dataModelEntities.reduce((s,e) => s + e.attrs.filter(a=>a.key==='PK'||a.key==='CPK').length, 0);
+  document.getElementById('dmKeyCount').textContent = keyAttrs;
+  const fkAttrs = dataModelEntities.reduce((s,e) => s + e.attrs.filter(a=>a.key==='FK').length, 0);
+  document.getElementById('dmFkCount').textContent = fkAttrs;
+}
+
+function renderRelationshipMap() {
+  const container = document.getElementById('relationshipMap');
+  container.innerHTML = '';
+  const rels = [];
+  dataModelEntities.forEach(e => {
+    e.attrs.filter(a => a.key === 'FK' && a.fk).forEach(a => {
+      rels.push({ from: e.name, to: a.fk, via: a.n, fromColor: e.color });
+    });
+  });
+  if (rels.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">No FK relationships defined</div>';
+    return;
+  }
+  rels.forEach(r => {
+    const targetEntity = dataModelEntities.find(e => e.name === r.to);
+    const targetPk = targetEntity?.attrs.find(a => a.key === 'PK' || a.key === 'CPK');
+    container.innerHTML += `<div class="rel-row">
+      <span class="rel-from" style="color:${r.fromColor}">${r.from}</span>
+      <span class="rel-via">.${r.via}</span>
+      <span class="rel-arrow">→</span>
+      <span class="rel-to" style="color:${targetEntity?.color||'var(--text-primary)'}">${r.to}</span>
+      <span class="rel-via">${targetPk?'.'+targetPk.n:''}</span>
+      <span class="rel-cardinality">N : 1</span>
+    </div>`;
+  });
+}
+
+function selectEntity(id) {
+  selectedEntityId = id;
+  const entity = dataModelEntities.find(e => e.id === id);
+  if (!entity) return;
+
+  document.querySelectorAll('.er-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('ercard-'+id)?.classList.add('selected');
+
+  const panel = document.getElementById('entityDetailPanel');
+  panel.style.display = 'block';
+  document.getElementById('entityDetailTitle').innerHTML = `<span style="color:${entity.color}">${entity.name}</span> <span class="badge">${entity.type} · ${entity.source||''}</span>`;
+
+  const cpkAttrs = entity.attrs.filter(a=>a.key==='CPK');
+  const hasComposite = cpkAttrs.length >= 2;
+
+  let compositeHtml = '';
+  if (hasComposite) {
+    compositeHtml = `<div style="background:rgba(232,168,56,0.08);border:1px solid rgba(232,168,56,0.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:5px;font-weight:600;">⚷ Composite Primary Key</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${cpkAttrs.map(a=>`<span style="font-size:12px;padding:3px 10px;background:rgba(232,168,56,0.15);border-radius:5px;color:var(--accent-light);font-weight:500;">${a.n} <span style="font-size:9px;opacity:0.7">(${a.dt})</span></span>`).join(' <span style="color:var(--text-muted);font-size:14px">+</span> ')}
+      </div>
+    </div>`;
+  }
+
+  let descHtml = entity.desc ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;padding:8px 12px;background:var(--bg-tertiary);border-radius:6px;border-left:3px solid ${entity.color}">${entity.desc}</div>` : '';
+
+  let tableHtml = `<table class="attr-table"><thead><tr>
+    <th>Attribute</th><th>Type</th><th>Key</th><th>FK Ref</th><th>Nullable</th><th style="width:80px">Actions</th>
+  </tr></thead><tbody>`;
+
+  entity.attrs.forEach((a, idx) => {
+    const keyOptions = ['','PK','CPK','FK','UK'].map(k =>
+      `<option value="${k}" ${a.key===k?'selected':''}>${k||'—'}</option>`
+    ).join('');
+
+    const fkRefOptions = ['',  ...dataModelEntities.map(e=>e.name)].map(en =>
+      `<option value="${en}" ${a.fk===en?'selected':''}>${en||'—'}</option>`
+    ).join('');
+
+    let keyBadges = '';
+    if (a.key === 'PK') keyBadges = '<span class="key-badge-sm pk">PK</span>';
+    else if (a.key === 'CPK') keyBadges = '<span class="key-badge-sm cpk">CPK</span>';
+    else if (a.key === 'FK') keyBadges = `<span class="key-badge-sm fk">FK</span>`;
+    else if (a.key === 'UK') keyBadges = '<span class="key-badge-sm uk">UK</span>';
+    else keyBadges = '<span class="key-badge-sm none">—</span>';
+
+    tableHtml += `<tr data-idx="${idx}">
+      <td style="font-weight:500">${a.n}</td>
+      <td><span style="font-family:monospace;font-size:11px;color:var(--text-muted)">${a.dt}</span></td>
+      <td>
+        <select class="form-select" style="padding:3px 6px;font-size:10px;width:80px;background:transparent;border-color:transparent;"
+          onchange="updateAttrKey('${entity.id}',${idx},this.value)">
+          ${keyOptions}
+        </select>
+      </td>
+      <td>${a.key==='FK'?`<select class="form-select" style="padding:3px 6px;font-size:10px;width:110px;background:transparent;border-color:transparent;"
+          onchange="updateAttrFk('${entity.id}',${idx},this.value)">
+          ${fkRefOptions}
+        </select>`:`<span style="color:var(--text-muted);font-size:11px">—</span>`}</td>
+      <td style="font-size:11px;color:${a.nullable?'var(--text-muted)':'var(--warning)'}">${a.nullable?'Yes':'Required'}</td>
+      <td><div class="attr-actions" style="opacity:1">
+        <button class="attr-action-btn danger" onclick="removeAttr('${entity.id}',${idx})" title="Remove">✕</button>
+      </div></td>
+    </tr>`;
+  });
+  tableHtml += '</tbody></table>';
+
+  document.getElementById('entityDetailContent').innerHTML = descHtml + compositeHtml + '<div style="overflow-x:auto;">' + tableHtml + '</div>';
+
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function updateAttrKey(entityId, idx, newKey) {
+  const entity = dataModelEntities.find(e => e.id === entityId);
+  if (!entity) return;
+  entity.attrs[idx].key = newKey;
+  if (newKey !== 'FK') entity.attrs[idx].fk = '';
+  selectEntity(entityId);
+  renderDataModel(getCurrentFilter());
+}
+
+function updateAttrFk(entityId, idx, newFk) {
+  const entity = dataModelEntities.find(e => e.id === entityId);
+  if (!entity) return;
+  entity.attrs[idx].fk = newFk;
+  renderRelationshipMap();
+}
+
+function removeAttr(entityId, idx) {
+  const entity = dataModelEntities.find(e => e.id === entityId);
+  if (!entity) return;
+  entity.attrs.splice(idx, 1);
+  selectEntity(entityId);
+  renderDataModel(getCurrentFilter());
+}
+
+function deleteSelectedEntity() {
+  if (!selectedEntityId) return;
+  const entity = dataModelEntities.find(e => e.id === selectedEntityId);
+  if (!confirm(`Delete entity "${entity.name}" and all its attributes?`)) return;
+  const idx = dataModelEntities.findIndex(e => e.id === selectedEntityId);
+  if (idx > -1) dataModelEntities.splice(idx, 1);
+  selectedEntityId = null;
+  document.getElementById('entityDetailPanel').style.display = 'none';
+  renderDataModel(getCurrentFilter());
+}
+
+function getCurrentFilter() {
+  const active = document.querySelector('#view-data-model .filter-chip.active');
+  return active ? active.textContent.trim() : 'all';
+}
+
+function filterEntities(type, el) {
+  document.querySelectorAll('#view-data-model .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const filterVal = type === 'All' ? 'all' : type === 'Function / View' ? 'Function' : type;
+  renderDataModel(filterVal);
+}
+
+// ─── ADD ENTITY MODAL ───
+function openEntityModal() {
+  document.getElementById('modalEntity').classList.add('active');
+  document.getElementById('newEntityName').value = '';
+  document.getElementById('newEntityDesc').value = '';
+  const rows = document.getElementById('newAttrRows');
+  rows.innerHTML = '';
+  addAttrRow();
+  addAttrRow();
+  addAttrRow();
+  populateFkSelectors();
+}
+
+function addAttrRow() {
+  const tbody = document.getElementById('newAttrRows');
+  const fkOptions = dataModelEntities.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="form-input" style="padding:5px 8px;font-size:11px;" placeholder="attributeName"></td>
+    <td><select class="form-select" style="padding:5px 8px;font-size:11px;"><option>VARCHAR</option><option>INT</option><option>DATE</option><option>DATETIME</option><option>DECIMAL</option><option>BOOLEAN</option><option>TEXT</option></select></td>
+    <td><select class="form-select" style="padding:5px 8px;font-size:11px;" onchange="onKeyTypeChange(this)"><option value="">—</option><option value="PK">PK</option><option value="CPK">Composite PK</option><option value="FK">FK</option><option value="UK">Unique</option></select></td>
+    <td><select class="form-select" style="padding:5px 8px;font-size:11px;" disabled><option value="">—</option>${fkOptions}</select></td>
+    <td><button class="attr-action-btn danger" onclick="this.closest('tr').remove()" style="opacity:1">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function onKeyTypeChange(sel) {
+  const row = sel.closest('tr');
+  const fkSel = row.querySelectorAll('select')[2];
+  if (sel.value === 'FK') { fkSel.disabled = false; } else { fkSel.disabled = true; fkSel.value = ''; }
+}
+
+function populateFkSelectors() {
+  document.querySelectorAll('#newAttrRows select:nth-of-type(3)').forEach(sel => {
+    const current = sel.value;
+    sel.innerHTML = '<option value="">—</option>' + dataModelEntities.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+    sel.value = current;
+  });
+}
+
+function saveNewEntity() {
+  const name = document.getElementById('newEntityName').value.trim();
+  if (!name) { alert('Entity name is required'); return; }
+  const type = document.getElementById('newEntityType').value;
+  const source = document.getElementById('newEntitySource').value;
+  const color = document.getElementById('newEntityColor').value;
+  const desc = document.getElementById('newEntityDesc').value.trim();
+
+  const attrs = [];
+  document.querySelectorAll('#newAttrRows tr').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const selects = row.querySelectorAll('select');
+    const attrName = inputs[0]?.value.trim();
+    if (!attrName) return;
+    attrs.push({
+      n: attrName,
+      dt: selects[0]?.value || 'VARCHAR',
+      key: selects[1]?.value || '',
+      fk: selects[1]?.value === 'FK' ? (selects[2]?.value || '') : '',
+      nullable: true
+    });
+  });
+
+  if (attrs.length === 0) { alert('Add at least one attribute'); return; }
+
+  entityCounter++;
+  dataModelEntities.push({
+    id: 'e' + entityCounter,
+    name, type, color, source, desc, attrs
+  });
+
+  closeAllModals();
+  renderDataModel(getCurrentFilter());
+}
+
+// ─── ADD ATTRIBUTE TO EXISTING ENTITY ───
+function openEditAttributeModal() {
+  if (!selectedEntityId) return;
+  const entity = dataModelEntities.find(e => e.id === selectedEntityId);
+  document.getElementById('addAttrModalTitle').textContent = `Add Attribute to ${entity.name}`;
+  document.getElementById('editAttrName').value = '';
+  document.getElementById('editAttrKey').value = '';
+  document.getElementById('editFkRefGroup').style.display = 'none';
+
+  const fkSel = document.getElementById('editFkRef');
+  fkSel.innerHTML = '<option value="">—</option>' + dataModelEntities.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+
+  document.getElementById('modalAttribute').classList.add('active');
+}
+
+function onEditKeyChange(sel) {
+  document.getElementById('editFkRefGroup').style.display = sel.value === 'FK' ? 'block' : 'none';
+}
+
+function saveNewAttribute() {
+  if (!selectedEntityId) return;
+  const entity = dataModelEntities.find(e => e.id === selectedEntityId);
+  const name = document.getElementById('editAttrName').value.trim();
+  if (!name) { alert('Attribute name is required'); return; }
+  const dt = document.getElementById('editAttrType').value;
+  const key = document.getElementById('editAttrKey').value;
+  const fk = key === 'FK' ? document.getElementById('editFkRef').value : '';
+  const nullable = document.getElementById('editAttrNullable').value === 'true';
+
+  entity.attrs.push({ n: name, dt, key, fk, nullable });
+  closeAllModals();
+  selectEntity(selectedEntityId);
+  renderDataModel(getCurrentFilter());
+}
+
+// Initial render
+renderDataModel();
+
+// ═══════════════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════════════
+function selectZone(z, el) {
+  document.querySelectorAll('.zone').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  const space = storeSpaces.find(s=>s.spaceId===z.spaceId);
+  const mod = space ? modules.find(m=>m.id===space.moduleId) : null;
+  document.getElementById('detailBadge').textContent = z.label;
+  document.getElementById('zoneDetailContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:36px;height:36px;border-radius:8px;background:${z.color}33;display:flex;align-items:center;justify-content:center;font-size:14px;">${mod?.icon||'▪'}</div>
+      <div><div style="font-size:14px;font-weight:600">${z.label}</div><div style="font-size:11px;color:var(--text-secondary)">${space?.vmModule||''} · ${mod?.cat||''}</div></div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-label">Space ID</div><div class="detail-value">${space?.spaceId}</div></div>
+      <div class="detail-item"><div class="detail-label">Module ID</div><div class="detail-value">${space?.moduleId}</div></div>
+      <div class="detail-item"><div class="detail-label">Dimensions</div><div class="detail-value" style="font-size:12px">${space?.dim}</div></div>
+      <div class="detail-item"><div class="detail-label">Fixture Count</div><div class="detail-value">${space?.count}</div></div>
+      <div class="detail-item"><div class="detail-label">MDQ</div><div class="detail-value">${mod?.mdq||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">PDQ</div><div class="detail-value">${mod?.pdq||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Size</div><div class="detail-value">${mod?.size||'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Assortment</div><div class="detail-value" style="font-size:11px">${mod?.assort||'—'}</div></div>
+    </div>`;
+}
+
+function showTooltip(e, z) {
+  const tip = document.getElementById('tooltip');
+  const space = storeSpaces.find(s=>s.spaceId===z.spaceId);
+  const mod = space ? modules.find(m=>m.id===space.moduleId) : null;
+  tip.style.display = 'block';
+  tip.innerHTML = `<div class="tooltip-title">${z.label}</div>
+    <div class="tooltip-row"><span>Module</span><span>${space?.vmModule||'—'}</span></div>
+    <div class="tooltip-row"><span>Category</span><span>${mod?.cat||'—'}</span></div>
+    <div class="tooltip-row"><span>Dimensions</span><span>${space?.dim||'—'}</span></div>
+    <div class="tooltip-row"><span>Fixtures</span><span>×${space?.count||0}</span></div>
+    <div class="tooltip-row"><span>MDQ/PDQ</span><span>${mod?.mdq||0}/${mod?.pdq||0}</span></div>`;
+  tip.style.left = (e.clientX+12)+'px'; tip.style.top = (e.clientY+12)+'px';
+}
+function hideTooltip() { document.getElementById('tooltip').style.display='none'; }
+document.addEventListener('mousemove', e => {
+  const t = document.getElementById('tooltip');
+  if(t.style.display==='block'){t.style.left=(e.clientX+12)+'px';t.style.top=(e.clientY+12)+'px';}
+});
+
+// Navigation
+document.querySelectorAll('.nav-item').forEach(nav => {
+  nav.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    nav.classList.add('active');
+    const view = nav.dataset.view;
+    document.querySelectorAll('.view-panel').forEach(v=>v.classList.remove('active'));
+    const panel = document.getElementById('view-'+view);
+    if(panel) panel.classList.add('active');
+    const titles = {
+      'dashboard':'Space Operations Dashboard','planner':'Space Planner Workflow',
+      'store-space':'Store Space Management',
+      'modules':'VM Module Master','items':'Items & Product Construct',
+      'campaigns':'Campaign Management','assortment':'Store Assortment',
+      'ranging':'Ranging Analysis','data-model':'FTC Space Data Model',
+      'graph':'Entity Relationship Graph'
+    };
+    document.getElementById('pageTitle').textContent = titles[view]||'Dashboard';
+    if (view === 'graph') { setTimeout(initGraph, 50); }
+    if (view === 'planner') { renderPlannerStep1(); renderPlannerStep2(); renderPlannerStep3(); }
+  });
+});
+
+function toggleHeatmap() { document.getElementById('floorPlan').classList.toggle('heatmap-active'); }
+function filterModules(cat, el) {
+  document.querySelectorAll('#view-modules .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderModules(cat);
+}
+function filterItemCat(cat, el) {
+  document.querySelectorAll('#view-items .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderItems(cat, document.querySelector('#view-items .search-input')?.value||'');
+}
+function filterItems(v) { const active = document.querySelector('#view-items .filter-chip.active'); renderItems(active?.textContent||'all', v); }
+
+function switchRangingTab(el, tab) {
+  document.querySelectorAll('#view-ranging .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('rangingActive').style.display = tab==='active'?'block':'none';
+  document.getElementById('rangingDiff').style.display = tab==='diff'?'block':'none';
+}
+
+function openModal(type) { document.getElementById('modalSpace').classList.add('active'); }
+function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active')); }
+
+function toggleStoreDropdown() {
+  const dd = document.getElementById('storeDropdown');
+  dd.classList.toggle('open');
+}
+
+function exportReport() {
+  alert('Export: FTC_SpaceIQ_BE01009_W7_2026.pdf\n\nIncludes: Store layout, module allocations, assortment mapping, ranging status, and campaign timeline.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPACE PLANNER WORKFLOW ENGINE
+// ═══════════════════════════════════════════════════════════
+let currentStep = 1;
+let mergeResults = [];
+let mergeActions = {}; // track add/skip per merge row
+
+function goStep(step) {
+  currentStep = step;
+  // Update stepper visuals
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('wfStep'+i);
+    el.classList.remove('active','completed');
+    if (i < step) el.classList.add('completed');
+    if (i === step) el.classList.add('active');
+    document.getElementById('wfPanel'+i).classList.remove('active');
+  }
+  document.getElementById('wfPanel'+step).classList.add('active');
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('wfConn'+i).classList.toggle('done', i < step);
+  }
+  // Render current step content
+  if (step === 1) renderPlannerStep1();
+  if (step === 2) renderPlannerStep2();
+  if (step === 3) renderPlannerStep3();
+  if (step === 4) runMerge();
+}
+
+// ──── STEP 1: Module Master ────
+function renderPlannerStep1() {
+  const body = document.getElementById('wfModuleBody');
+  body.innerHTML = '';
+  modules.forEach(m => {
+    body.innerHTML += `<tr>
+      <td>${m.id}</td>
+      <td><span class="dot" style="background:${m.color}"></span><strong>${m.code}</strong></td>
+      <td>${m.cat}</td>
+      <td><span class="badge-pill" style="background:var(--bg-tertiary);color:var(--text-secondary);padding:2px 8px;font-size:10px">${m.size}</span></td>
+      <td><span class="badge-pill ${m.assort.includes('Core')?'badge-core':m.assort.includes('Campaign')?'badge-campaign':''}" style="padding:2px 8px;font-size:10px">${m.assort}</span></td>
+      <td style="font-weight:600">${m.mdq}</td>
+      <td style="font-weight:600">${m.pdq}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--text-muted)">${m.ax}</td>
+      <td><button class="attr-action-btn danger" onclick="removeModule(${m.id})" style="opacity:0.6" title="Remove">✕</button></td>
+    </tr>`;
+  });
+  // Capacity overview
+  const capEl = document.getElementById('wfModuleCapacity');
+  const maxMdq = Math.max(...modules.map(m=>m.mdq));
+  capEl.innerHTML = modules.map(m => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div style="width:120px;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary)">${m.code}</div>
+      <div class="cap-bar"><div class="cap-bar-fill" style="width:${m.mdq/maxMdq*100}%;background:${m.color}"></div></div>
+      <div style="font-size:11px;font-weight:600;width:60px;text-align:right;">MDQ ${m.mdq}</div>
+    </div>`).join('');
+  // Category dist
+  const catEl = document.getElementById('wfModuleCatDist');
+  const cats = {};
+  modules.forEach(m => { cats[m.cat] = (cats[m.cat]||0) + 1; });
+  const maxCat = Math.max(...Object.values(cats));
+  catEl.innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,cnt]) => {
+    const mod = modules.find(m=>m.cat===cat);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div style="width:80px;font-size:11px;color:var(--text-secondary)">${cat}</div>
+      <div class="cap-bar"><div class="cap-bar-fill" style="width:${cnt/maxCat*100}%;background:${mod?.color||'#666'}"></div></div>
+      <div style="font-size:11px;font-weight:600;width:30px;text-align:right;">${cnt}</div>
+    </div>`;
+  }).join('');
+}
+
+function removeModule(id) {
+  const idx = modules.findIndex(m=>m.id===id);
+  if (idx > -1 && confirm('Remove this module?')) { modules.splice(idx,1); renderPlannerStep1(); }
+}
+
+function openAddModuleModal() {
+  const nextId = modules.length ? Math.max(...modules.map(m=>m.id)) + 1 : 1;
+  const cat = prompt('Module category (Wall, Table, Bin, Platform, Fridge):','Wall');
+  if (!cat) return;
+  const size = prompt('Size code (XXXS, XXS, XS, S, M, L, XL, XXL):','M');
+  const assort = prompt('Assortment type (Fixed, Core, Campaign-Event, Campaign-Seasonal):','Core');
+  const mdq = parseInt(prompt('MDQ (min display quantity):','8'),10)||8;
+  const pdq = parseInt(prompt('PDQ (presentation display quantity):','16'),10)||16;
+  const colorMap = {Wall:'var(--cat-wall)',Table:'var(--cat-table)',Bin:'var(--cat-bin)',Platform:'var(--cat-platform)',Fridge:'var(--cat-fridge)'};
+  const iconMap = {Wall:'▐',Table:'▬',Bin:'▣',Platform:'▭',Fridge:'▨'};
+  const code = `VM-${cat.toUpperCase()}-${String(nextId).padStart(3,'0')}`;
+  modules.push({
+    id:nextId, code, cat, size, assort, mdq, pdq,
+    ax:`AX-${cat.toUpperCase()}-${String(nextId).padStart(3,'0')}`,
+    color:colorMap[cat]||'var(--text-secondary)', icon:iconMap[cat]||'▪'
+  });
+  renderPlannerStep1();
+}
+
+// ──── STEP 2: Store Space ────
+function renderPlannerStep2() {
+  const body = document.getElementById('wfSpaceBody');
+  body.innerHTML = '';
+  let totalMdq = 0, totalPdq = 0, totalCount = 0;
+  storeSpaces.forEach(s => {
+    const mod = modules.find(m=>m.id===s.moduleId);
+    const sMdq = (mod?.mdq||0) * s.count;
+    const sPdq = (mod?.pdq||0) * s.count;
+    totalMdq += sMdq; totalPdq += sPdq; totalCount += s.count;
+    body.innerHTML += `<tr>
+      <td><strong>${s.spaceId}</strong></td>
+      <td style="font-family:monospace;font-size:11px">${s.storeId}</td>
+      <td><span class="dot" style="background:${mod?.color||'#666'}"></span>${s.vmModule||mod?.code||'—'}</td>
+      <td>${mod?.cat||'—'}</td>
+      <td>${s.loc}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${s.dim}</td>
+      <td style="font-weight:700;font-size:15px;color:var(--accent)">${s.count}</td>
+      <td style="font-weight:600;color:var(--success)">${sMdq}</td>
+      <td style="font-weight:600;color:var(--info)">${sPdq}</td>
+      <td style="font-size:11px">${s.start}</td>
+      <td style="font-size:11px">${s.end}</td>
+      <td><button class="attr-action-btn danger" onclick="removeSpace(${s.spaceId})" style="opacity:0.6">✕</button></td>
+    </tr>`;
+  });
+  // Footer totals
+  document.getElementById('wfSpaceFoot').innerHTML = `<tr style="background:var(--bg-tertiary);">
+    <td colspan="6" style="font-weight:600;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Totals</td>
+    <td style="font-weight:700;font-size:15px;color:var(--accent)">${totalCount}</td>
+    <td style="font-weight:700;color:var(--success)">${totalMdq}</td>
+    <td style="font-weight:700;color:var(--info)">${totalPdq}</td>
+    <td colspan="3"></td>
+  </tr>`;
+  // Capacity summary
+  const capEl = document.getElementById('wfSpaceCapSummary');
+  const modCap = {};
+  storeSpaces.forEach(s => {
+    const mod = modules.find(m=>m.id===s.moduleId);
+    if (!mod) return;
+    if (!modCap[mod.code]) modCap[mod.code] = { count:0, mdq:0, color:mod.color, cat:mod.cat };
+    modCap[mod.code].count += s.count;
+    modCap[mod.code].mdq += mod.mdq * s.count;
+  });
+  const maxCap = Math.max(...Object.values(modCap).map(v=>v.mdq),1);
+  capEl.innerHTML = Object.entries(modCap).map(([code,v]) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="width:130px;font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        <span class="dot" style="background:${v.color}"></span>${code}
+      </div>
+      <div style="width:50px;font-size:11px;color:var(--text-muted)">×${v.count}</div>
+      <div class="cap-bar"><div class="cap-bar-fill" style="width:${v.mdq/maxCap*100}%;background:${v.color}"></div></div>
+      <div style="font-size:11px;font-weight:600;width:65px;text-align:right;">MDQ ${v.mdq}</div>
+    </div>`).join('');
+}
+
+function removeSpace(id) {
+  const idx = storeSpaces.findIndex(s=>s.spaceId===id);
+  if (idx > -1 && confirm('Remove this space allocation?')) { storeSpaces.splice(idx,1); renderPlannerStep2(); }
+}
+
+function openAddSpaceRow() {
+  const nextId = storeSpaces.length ? Math.max(...storeSpaces.map(s=>s.spaceId)) + 1 : 1;
+  const modCode = prompt('VM Module code (e.g. VM-WALL-001):','VM-WALL-001');
+  const mod = modules.find(m=>m.code===modCode);
+  if (!mod) { alert('Module not found in catalog. Add it in Step 1 first.'); return; }
+  const loc = prompt('Location description (e.g. P6 - Back Wall Right):','');
+  const dim = prompt('Dimensions (e.g. 2.5m × 3m):','');
+  const count = parseInt(prompt('Fixture count at this location:','2'),10)||1;
+  storeSpaces.push({
+    spaceId:nextId, storeId:'BE01009', moduleId:mod.id, vmModule:mod.code,
+    loc:loc||'New Location', dim:dim||'—', count, start:'2026-02-16', end:'2099-01-01'
+  });
+  renderPlannerStep2();
+}
+
+// ──── STEP 3: Item ↔ Module Eligibility ────
+function renderPlannerStep3() {
+  const body = document.getElementById('wfItemModBody');
+  body.innerHTML = '';
+  items.forEach(it => {
+    const mod = modules.find(m=>m.id===it.moduleId);
+    body.innerHTML += `<tr>
+      <td><strong>${it.num}</strong></td>
+      <td>${it.name}</td>
+      <td>${it.cat1}</td>
+      <td><span class="dot" style="background:${mod?.color||'#666'}"></span>${mod?.code||'—'}</td>
+      <td>${mod?.cat||'—'}</td>
+      <td style="font-weight:600">${it.mdq}</td>
+      <td style="font-weight:600">${it.pdq}</td>
+      <td>${it.campaign?`<span class="badge-pill badge-campaign" style="padding:2px 8px;font-size:10px">${it.campaign}</span>`:'<span style="color:var(--text-muted)">Core</span>'}</td>
+      <td style="font-size:11px;color:var(--text-muted)">—</td>
+      <td style="font-size:10px;color:var(--text-muted)">${it.start}${it.end?' → '+it.end:' → ∞'}</td>
+      <td><button class="attr-action-btn danger" onclick="removeItemMapping(${it.num})" style="opacity:0.6">✕</button></td>
+    </tr>`;
+  });
+  // Item coverage by module
+  const covEl = document.getElementById('wfItemCoverage');
+  const modItems = {};
+  items.forEach(it => {
+    const mod = modules.find(m=>m.id===it.moduleId);
+    if (!mod) return;
+    if (!modItems[mod.code]) modItems[mod.code] = { count:0, color:mod.color };
+    modItems[mod.code].count++;
+  });
+  const maxItems = Math.max(...Object.values(modItems).map(v=>v.count),1);
+  covEl.innerHTML = Object.entries(modItems).sort((a,b)=>b[1].count-a[1].count).map(([code,v]) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div style="width:120px;font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${code}</div>
+      <div class="cap-bar"><div class="cap-bar-fill" style="width:${v.count/maxItems*100}%;background:${v.color}"></div></div>
+      <div style="font-size:11px;font-weight:600;width:40px;text-align:right;">${v.count} items</div>
+    </div>`).join('');
+  // Gaps — modules with spaces but no items
+  const gapEl = document.getElementById('wfItemGaps');
+  const modulesWithSpaces = [...new Set(storeSpaces.map(s=>s.moduleId))];
+  const modulesWithItems = [...new Set(items.map(it=>it.moduleId))];
+  const gaps = modulesWithSpaces.filter(mid => !modulesWithItems.includes(mid));
+  if (gaps.length === 0) {
+    gapEl.innerHTML = '<div style="text-align:center;padding:16px 0;color:var(--success);font-size:12px;">✓ All store modules have eligible items</div>';
+  } else {
+    gapEl.innerHTML = gaps.map(mid => {
+      const mod = modules.find(m=>m.id===mid);
+      return `<div class="alert-item danger" style="margin-bottom:4px;padding:8px">
+        <div class="alert-icon">●</div>
+        <div class="alert-text"><strong>${mod?.code||'Module '+mid}</strong> has store space allocated but no items mapped to it</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function removeItemMapping(num) {
+  const idx = items.findIndex(it=>it.num===num);
+  if (idx > -1 && confirm('Remove item-module mapping?')) { items.splice(idx,1); renderPlannerStep3(); }
+}
+
+function openAddItemModuleRow() {
+  const num = parseInt(prompt('Item number:',''),10);
+  if (!num) return;
+  const name = prompt('Item name:','');
+  const cat = prompt('Category:','');
+  const modCode = prompt('Eligible VM Module code (e.g. VM-WALL-001):','VM-WALL-001');
+  const mod = modules.find(m=>m.code===modCode);
+  if (!mod) { alert('Module not found. Add it in Step 1 first.'); return; }
+  const mdq = parseInt(prompt('Item MDQ:','4'),10)||4;
+  const pdq = parseInt(prompt('Item PDQ:','12'),10)||12;
+  const camp = prompt('Campaign (blank for core):','');
+  items.push({ num, name:name||'Item '+num, desc:'', cat1:cat||'General', cat2:'', campaign:camp||null, mdq, pdq, moduleId:mod.id, start:'2026-02-16', end:null });
+  renderPlannerStep3();
+}
+
+// ──── STEP 4: Merge Engine ────
+function runMerge() {
+  mergeResults = [];
+  // For each store space, find all eligible items (items whose moduleId matches the space's moduleId)
+  storeSpaces.forEach(space => {
+    const mod = modules.find(m => m.id === space.moduleId);
+    const spaceMdq = (mod?.mdq || 0) * space.count;
+    const eligibleItems = items.filter(it => it.moduleId === space.moduleId);
+
+    if (eligibleItems.length === 0) {
+      mergeResults.push({
+        space, mod, spaceMdq,
+        item: null, itemMdq: 0,
+        status: 'no-items', capPct: 0
+      });
+    } else {
+      let usedMdq = 0;
+      eligibleItems.forEach(it => {
+        usedMdq += it.mdq;
+        const pct = Math.min(100, Math.round(usedMdq / spaceMdq * 100));
+        mergeResults.push({
+          space, mod, spaceMdq,
+          item: it, itemMdq: it.mdq,
+          status: usedMdq <= spaceMdq ? 'fit' : 'over-capacity',
+          capPct: pct
+        });
+      });
+    }
+  });
+
+  // Render merge table
+  const body = document.getElementById('mergeBody');
+  body.innerHTML = '';
+  mergeResults.forEach((r, idx) => {
+    const key = `m${idx}`;
+    const actionState = mergeActions[key] || 'pending';
+    const statusBadge = r.status === 'fit'
+      ? '<span class="badge-pill badge-open" style="padding:2px 8px;font-size:10px">✓ Fit</span>'
+      : r.status === 'over-capacity'
+      ? '<span class="badge-pill badge-closing" style="padding:2px 8px;font-size:10px">⚠ Over</span>'
+      : '<span class="badge-pill badge-closed" style="padding:2px 8px;font-size:10px">∅ Empty</span>';
+
+    const capColor = r.capPct > 100 ? 'var(--danger)' : r.capPct > 80 ? 'var(--warning)' : 'var(--success)';
+
+    let actionHtml = '';
+    if (r.item) {
+      if (actionState === 'added') {
+        actionHtml = '<button class="merge-action added">✓ Added</button>';
+      } else {
+        actionHtml = `<button class="merge-action add" onclick="mergeAdd('${key}',this)">+ Range</button>
+          <button class="merge-action skip" onclick="mergeSkip('${key}',this)" style="margin-left:3px">Skip</button>`;
+      }
+    } else {
+      actionHtml = '<span style="font-size:10px;color:var(--text-muted)">No items</span>';
+    }
+
+    body.innerHTML += `<tr class="${r.item && r.status==='fit'?'match':''}">
+      <td><strong>${r.space.spaceId}</strong></td>
+      <td>${r.space.loc}</td>
+      <td><span class="dot" style="background:${r.mod?.color||'#666'}"></span>${r.space.vmModule||r.mod?.code||'—'}</td>
+      <td style="font-weight:600">${r.space.count}</td>
+      <td style="font-weight:600;color:var(--success)">${r.spaceMdq}</td>
+      <td>${r.item?'<strong>'+r.item.num+'</strong>':'—'}</td>
+      <td>${r.item?.name||'—'}</td>
+      <td>${r.item?r.item.mdq:'—'}</td>
+      <td>${r.item?.campaign?`<span class="badge-pill badge-campaign" style="padding:2px 6px;font-size:9px">${r.item.campaign}</span>`:(r.item?'Core':'—')}</td>
+      <td>
+        <div class="cap-bar-wrap">
+          <div class="cap-bar" style="width:80px"><div class="cap-bar-fill" style="width:${Math.min(r.capPct,100)}%;background:${capColor}"></div></div>
+          <span style="font-size:10px;font-weight:600;color:${capColor}">${r.capPct}%</span>
+        </div>
+      </td>
+      <td>${statusBadge}</td>
+      <td>${actionHtml}</td>
+    </tr>`;
+  });
+
+  // Status summary
+  const added = Object.values(mergeActions).filter(v=>v==='added').length;
+  const fits = mergeResults.filter(r=>r.status==='fit').length;
+  const overs = mergeResults.filter(r=>r.status==='over-capacity').length;
+  const empties = mergeResults.filter(r=>r.status==='no-items').length;
+  document.getElementById('mergeStatus').style.display = 'block';
+  document.getElementById('mergeStatus').innerHTML = `
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <div style="padding:8px 14px;background:var(--bg-tertiary);border-radius:7px;font-size:12px;">
+        <span style="color:var(--text-muted)">Total rows:</span> <strong>${mergeResults.length}</strong>
+      </div>
+      <div style="padding:8px 14px;background:rgba(74,222,128,0.08);border-radius:7px;font-size:12px;">
+        <span style="color:var(--success)">✓ Fits:</span> <strong>${fits}</strong>
+      </div>
+      <div style="padding:8px 14px;background:rgba(251,191,36,0.08);border-radius:7px;font-size:12px;">
+        <span style="color:var(--warning)">⚠ Over capacity:</span> <strong>${overs}</strong>
+      </div>
+      <div style="padding:8px 14px;background:rgba(248,113,113,0.08);border-radius:7px;font-size:12px;">
+        <span style="color:var(--danger)">∅ Empty spaces:</span> <strong>${empties}</strong>
+      </div>
+      <div style="padding:8px 14px;background:rgba(232,168,56,0.08);border-radius:7px;font-size:12px;">
+        <span style="color:var(--accent)">Ranged:</span> <strong>${added}</strong>
+      </div>
+    </div>`;
+
+  // Capacity utilisation by space
+  const capEl = document.getElementById('mergeCapUtil');
+  const spaceUtil = {};
+  mergeResults.forEach(r => {
+    if (!spaceUtil[r.space.spaceId]) spaceUtil[r.space.spaceId] = { loc:r.space.loc, mod:r.mod, total:r.spaceMdq, used:0 };
+    if (r.item) spaceUtil[r.space.spaceId].used += r.item.mdq;
+  });
+  capEl.innerHTML = Object.entries(spaceUtil).map(([sid,v]) => {
+    const pct = v.total > 0 ? Math.round(v.used/v.total*100) : 0;
+    const capColor = pct > 100 ? 'var(--danger)' : pct > 80 ? 'var(--warning)' : 'var(--success)';
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="width:130px;font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        Space ${sid}: ${v.loc}
+      </div>
+      <div class="cap-bar"><div class="cap-bar-fill" style="width:${Math.min(pct,100)}%;background:${capColor}"></div></div>
+      <div style="font-size:11px;font-weight:600;width:70px;text-align:right;color:${capColor}">${v.used}/${v.total} (${pct}%)</div>
+    </div>`;
+  }).join('');
+
+  // Summary
+  const sumEl = document.getElementById('mergeSummary');
+  const uniqueItems = [...new Set(mergeResults.filter(r=>r.item).map(r=>r.item.num))].length;
+  const uniqueSpaces = [...new Set(mergeResults.map(r=>r.space.spaceId))].length;
+  const totalSpaceMdq = [...new Set(mergeResults.map(r=>r.space.spaceId))].reduce((s,sid) => s + (spaceUtil[sid]?.total||0),0);
+  const totalUsedMdq = Object.values(spaceUtil).reduce((s,v)=>s+v.used,0);
+  sumEl.innerHTML = `
+    <div class="detail-grid" style="grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="detail-item"><div class="detail-label">Spaces Covered</div><div class="detail-value">${uniqueSpaces}</div></div>
+      <div class="detail-item"><div class="detail-label">Unique Items</div><div class="detail-value">${uniqueItems}</div></div>
+      <div class="detail-item"><div class="detail-label">Total Capacity (MDQ)</div><div class="detail-value" style="color:var(--success)">${totalSpaceMdq}</div></div>
+      <div class="detail-item"><div class="detail-label">Utilised (MDQ)</div><div class="detail-value" style="color:var(--accent)">${totalUsedMdq}</div></div>
+    </div>
+    <div style="margin-top:10px;padding:10px;background:var(--bg-tertiary);border-radius:7px;">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:6px;">Overall Utilisation</div>
+      <div class="cap-bar-wrap">
+        <div class="cap-bar" style="height:12px"><div class="cap-bar-fill" style="width:${totalSpaceMdq>0?Math.min(100,Math.round(totalUsedMdq/totalSpaceMdq*100)):0}%;background:var(--accent);height:100%"></div></div>
+        <div style="font-size:16px;font-weight:700;color:var(--accent);width:50px;text-align:right;">${totalSpaceMdq>0?Math.round(totalUsedMdq/totalSpaceMdq*100):0}%</div>
+      </div>
+    </div>`;
+}
+
+function mergeAdd(key, btn) {
+  mergeActions[key] = 'added';
+  btn.className = 'merge-action added';
+  btn.textContent = '✓ Added';
+  btn.nextElementSibling?.remove();
+  // Update count
+  const added = Object.values(mergeActions).filter(v=>v==='added').length;
+  document.querySelector('#mergeStatus strong:last-of-type').textContent = added;
+}
+
+function mergeSkip(key, btn) {
+  mergeActions[key] = 'skipped';
+  const row = btn.closest('tr');
+  row.style.opacity = '0.4';
+  btn.previousElementSibling.remove();
+  btn.textContent = 'Skipped';
+  btn.className = 'merge-action skip';
+  btn.style.pointerEvents = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// ENTITY RELATIONSHIP GRAPH ENGINE
+// ═══════════════════════════════════════════════════════════
+let graphNodes = [];
+let graphEdges = [];
+let graphSelectedNode = null;
+let graphDragNode = null;
+let graphLayout = 'force';
+let graphTypeFilter = 'all';
+let graphInitialized = false;
+
+// Camera / viewport
+let cam = { x:0, y:0, zoom:1 };
+let panStart = null;
+let isPanning = false;
+
+// Physics
+let simRunning = false;
+let simAlpha = 1;
+
+const typeColorMap = {
+  Master:'var(--cat-wall)', Transactional:'var(--cat-platform)',
+  Reference:'var(--cat-behind)', Function:'var(--cat-core)'
+};
+const typeColorHex = {
+  Master:'#60A5FA', Transactional:'#FB923C',
+  Reference:'#F472B6', Function:'#34D399'
+};
+
+function cssVarToHex(v) {
+  const map = {
+    'var(--cat-wall)':'#60A5FA','var(--cat-table)':'#A78BFA','var(--cat-bin)':'#4ADE80',
+    'var(--cat-platform)':'#FB923C','var(--cat-fridge)':'#38BDF8','var(--cat-behind)':'#F472B6',
+    'var(--cat-campaign)':'#FBBF24','var(--cat-core)':'#34D399','var(--text-secondary)':'#8A91A3',
+    'var(--info)':'#60A5FA','var(--danger)':'#F87171','var(--accent)':'#E8A838'
+  };
+  return map[v] || '#8A91A3';
+}
+
+function buildGraph() {
+  const filtered = graphTypeFilter === 'all'
+    ? dataModelEntities
+    : dataModelEntities.filter(e => e.type === graphTypeFilter);
+  const nameSet = new Set(filtered.map(e=>e.name));
+
+  graphNodes = filtered.map((e, i) => ({
+    id: e.id, name: e.name, type: e.type, color: cssVarToHex(e.color),
+    colorVar: e.color, attrs: e.attrs, desc: e.desc, source: e.source,
+    x: 0, y: 0, vx: 0, vy: 0, fx: null, fy: null,
+    pkCount: e.attrs.filter(a=>a.key==='PK').length,
+    cpkCount: e.attrs.filter(a=>a.key==='CPK').length,
+    fkCount: e.attrs.filter(a=>a.key==='FK').length,
+    radius: 28 + Math.min(e.attrs.length * 1.2, 18),
+  }));
+
+  graphEdges = [];
+  filtered.forEach(e => {
+    e.attrs.filter(a => a.key === 'FK' && a.fk && nameSet.has(a.fk)).forEach(a => {
+      const srcNode = graphNodes.find(n => n.name === e.name);
+      const tgtNode = graphNodes.find(n => n.name === a.fk);
+      if (srcNode && tgtNode && srcNode.id !== tgtNode.id) {
+        const isCpk = e.attrs.some(at => at.n === a.n && at.key === 'CPK');
+        graphEdges.push({ source: srcNode, target: tgtNode, attr: a.n, composite: isCpk });
+      }
+    });
+  });
+
+  applyLayout(graphLayout);
+  renderGraphLegend();
+  renderGraphAdjList();
+}
+
+function applyLayout(type) {
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const W = canvas.width / (window.devicePixelRatio || 1);
+  const H = canvas.height / (window.devicePixelRatio || 1);
+  const cx = W / 2, cy = H / 2;
+  const n = graphNodes.length;
+
+  if (type === 'force') {
+    // Random initial positions
+    graphNodes.forEach((nd, i) => {
+      nd.x = cx + (Math.random() - 0.5) * W * 0.5;
+      nd.y = cy + (Math.random() - 0.5) * H * 0.5;
+      nd.vx = 0; nd.vy = 0;
+    });
+    simAlpha = 1;
+    simRunning = true;
+  } else if (type === 'hierarchy') {
+    // Group by type, arrange in rows
+    const groups = {};
+    const order = ['Master','Transactional','Reference','Function'];
+    graphNodes.forEach(nd => { if (!groups[nd.type]) groups[nd.type] = []; groups[nd.type].push(nd); });
+    let row = 0;
+    order.forEach(t => {
+      if (!groups[t]) return;
+      const g = groups[t];
+      const rowW = g.length * 140;
+      const startX = cx - rowW / 2 + 70;
+      g.forEach((nd, i) => {
+        nd.x = startX + i * 140;
+        nd.y = 80 + row * 140;
+        nd.vx = 0; nd.vy = 0;
+      });
+      row++;
+    });
+    simRunning = false;
+  } else if (type === 'circular') {
+    const r = Math.min(W, H) * 0.35;
+    graphNodes.forEach((nd, i) => {
+      const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+      nd.x = cx + Math.cos(angle) * r;
+      nd.y = cy + Math.sin(angle) * r;
+      nd.vx = 0; nd.vy = 0;
+    });
+    simRunning = false;
+  }
+  cam = { x: 0, y: 0, zoom: 1 };
+}
+
+function simulateForce() {
+  if (!simRunning || simAlpha < 0.001) { simRunning = false; return; }
+  simAlpha *= 0.985;
+
+  const canvas = document.getElementById('graphCanvas');
+  const W = canvas.width / (window.devicePixelRatio || 1);
+  const H = canvas.height / (window.devicePixelRatio || 1);
+  const cx = W / 2, cy = H / 2;
+
+  // Center gravity
+  graphNodes.forEach(nd => {
+    if (nd === graphDragNode) return;
+    nd.vx += (cx - nd.x) * 0.0008 * simAlpha;
+    nd.vy += (cy - nd.y) * 0.0008 * simAlpha;
+  });
+
+  // Repulsion
+  for (let i = 0; i < graphNodes.length; i++) {
+    for (let j = i + 1; j < graphNodes.length; j++) {
+      const a = graphNodes[i], b = graphNodes[j];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const minDist = a.radius + b.radius + 60;
+      const force = (minDist * minDist) / (dist * dist) * 1.8 * simAlpha;
+      const fx = (dx / dist) * force, fy = (dy / dist) * force;
+      if (a !== graphDragNode) { a.vx -= fx; a.vy -= fy; }
+      if (b !== graphDragNode) { b.vx += fx; b.vy += fy; }
+    }
+  }
+
+  // Edge attraction
+  graphEdges.forEach(e => {
+    let dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
+    let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    const idealDist = 200;
+    const force = (dist - idealDist) * 0.004 * simAlpha;
+    const fx = (dx / dist) * force, fy = (dy / dist) * force;
+    if (e.source !== graphDragNode) { e.source.vx += fx; e.source.vy += fy; }
+    if (e.target !== graphDragNode) { e.target.vx -= fx; e.target.vy -= fy; }
+  });
+
+  // Apply velocity with damping
+  graphNodes.forEach(nd => {
+    if (nd === graphDragNode) return;
+    nd.vx *= 0.75; nd.vy *= 0.75;
+    nd.x += nd.vx; nd.y += nd.vy;
+    // Boundary
+    nd.x = Math.max(nd.radius, Math.min(W - nd.radius, nd.x));
+    nd.y = Math.max(nd.radius, Math.min(H - nd.radius, nd.y));
+  });
+}
+
+function drawGraph() {
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background grid
+  ctx.fillStyle = '#0B0E13';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.scale(dpr, dpr);
+  ctx.translate(cam.x, cam.y);
+  ctx.scale(cam.zoom, cam.zoom);
+
+  // Draw subtle grid
+  ctx.strokeStyle = 'rgba(35,42,58,0.4)';
+  ctx.lineWidth = 0.5 / cam.zoom;
+  const gridSize = 50;
+  const startX = Math.floor(-cam.x / cam.zoom / gridSize) * gridSize - gridSize;
+  const startY = Math.floor(-cam.y / cam.zoom / gridSize) * gridSize - gridSize;
+  const endX = startX + W / cam.zoom + gridSize * 3;
+  const endY = startY + H / cam.zoom + gridSize * 3;
+  for (let x = startX; x < endX; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x, endY); ctx.stroke(); }
+  for (let y = startY; y < endY; y += gridSize) { ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(endX, y); ctx.stroke(); }
+
+  // Draw edges
+  graphEdges.forEach(e => {
+    const sx = e.source.x, sy = e.source.y, tx = e.target.x, ty = e.target.y;
+    const isHighlighted = graphSelectedNode && (e.source.id === graphSelectedNode.id || e.target.id === graphSelectedNode.id);
+
+    ctx.beginPath();
+    // Curved edges
+    const mx = (sx + tx) / 2, my = (sy + ty) / 2;
+    const dx = tx - sx, dy = ty - sy;
+    const nx = -dy * 0.15, ny = dx * 0.15;
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(mx + nx, my + ny, tx, ty);
+
+    ctx.strokeStyle = isHighlighted ? '#E8A838' : 'rgba(232,168,56,0.25)';
+    ctx.lineWidth = isHighlighted ? 2.5 / cam.zoom : 1.5 / cam.zoom;
+    if (e.composite) ctx.setLineDash([6 / cam.zoom, 4 / cam.zoom]);
+    else ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrowhead
+    const angle = Math.atan2(ty - (my + ny), tx - (mx + nx));
+    const arrLen = isHighlighted ? 12 : 9;
+    const ax = tx - Math.cos(angle) * (e.target.radius + 4);
+    const ay = ty - Math.sin(angle) * (e.target.radius + 4);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - Math.cos(angle - 0.35) * arrLen / cam.zoom, ay - Math.sin(angle - 0.35) * arrLen / cam.zoom);
+    ctx.lineTo(ax - Math.cos(angle + 0.35) * arrLen / cam.zoom, ay - Math.sin(angle + 0.35) * arrLen / cam.zoom);
+    ctx.closePath();
+    ctx.fillStyle = isHighlighted ? '#E8A838' : 'rgba(232,168,56,0.4)';
+    ctx.fill();
+
+    // Edge label
+    if (isHighlighted || cam.zoom > 0.7) {
+      const labelX = mx + nx * 0.6, labelY = my + ny * 0.6;
+      ctx.font = `${10/cam.zoom}px "DM Sans", sans-serif`;
+      ctx.fillStyle = isHighlighted ? '#E8A838' : 'rgba(138,145,163,0.6)';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(e.attr, labelX, labelY);
+    }
+  });
+
+  // Draw nodes
+  graphNodes.forEach(nd => {
+    const isSelected = graphSelectedNode && nd.id === graphSelectedNode.id;
+    const isConnected = graphSelectedNode && graphEdges.some(e =>
+      (e.source.id === graphSelectedNode.id && e.target.id === nd.id) ||
+      (e.target.id === graphSelectedNode.id && e.source.id === nd.id)
+    );
+    const isDimmed = graphSelectedNode && !isSelected && !isConnected;
+
+    // Glow for selected
+    if (isSelected) {
+      const grad = ctx.createRadialGradient(nd.x, nd.y, nd.radius, nd.x, nd.y, nd.radius * 2.2);
+      grad.addColorStop(0, nd.color + '33');
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(nd.x, nd.y, nd.radius * 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(nd.x, nd.y, nd.radius, 0, Math.PI * 2);
+    const alpha = isDimmed ? '15' : '30';
+    ctx.fillStyle = nd.color + alpha;
+    ctx.fill();
+    ctx.strokeStyle = isSelected ? '#E8A838' : isDimmed ? nd.color + '40' : nd.color + '90';
+    ctx.lineWidth = isSelected ? 3 / cam.zoom : 1.5 / cam.zoom;
+    ctx.stroke();
+
+    // Type indicator ring
+    const typeHex = typeColorHex[nd.type] || '#8A91A3';
+    ctx.beginPath();
+    ctx.arc(nd.x, nd.y, nd.radius + 4 / cam.zoom, -Math.PI * 0.5, -Math.PI * 0.5 + Math.PI * 2 * 0.25);
+    ctx.strokeStyle = isDimmed ? typeHex + '30' : typeHex + '80';
+    ctx.lineWidth = 2 / cam.zoom;
+    ctx.stroke();
+
+    // Name
+    ctx.font = `600 ${11/cam.zoom}px "DM Sans", sans-serif`;
+    ctx.fillStyle = isDimmed ? '#555D70' : '#EDE9E0';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Truncate long names
+    let displayName = nd.name;
+    if (displayName.length > 16) displayName = displayName.substring(0,14) + '…';
+    ctx.fillText(displayName, nd.x, nd.y - 4 / cam.zoom);
+
+    // Attr count
+    ctx.font = `${9/cam.zoom}px "DM Sans", sans-serif`;
+    ctx.fillStyle = isDimmed ? '#3A4050' : '#8A91A3';
+    ctx.fillText(`${nd.attrs.length} attrs`, nd.x, nd.y + 10 / cam.zoom);
+
+    // Key badges inside node
+    if (cam.zoom > 0.6 && !isDimmed) {
+      const badges = [];
+      if (nd.pkCount) badges.push({ t:'PK', c:'#E8A838' });
+      if (nd.cpkCount >= 2) badges.push({ t:'CPK', c:'#F5C96A' });
+      if (nd.fkCount) badges.push({ t:'FK×'+nd.fkCount, c:'#60A5FA' });
+      const bw = badges.length * 28 / cam.zoom;
+      let bx = nd.x - bw / 2;
+      badges.forEach(b => {
+        const tw = ctx.measureText(b.t).width + 8 / cam.zoom;
+        ctx.fillStyle = b.c + '25';
+        ctx.beginPath();
+        const rr = 3 / cam.zoom;
+        const bh = 13 / cam.zoom;
+        const by = nd.y + 18 / cam.zoom;
+        ctx.roundRect(bx, by, tw, bh, rr);
+        ctx.fill();
+        ctx.font = `600 ${7.5/cam.zoom}px "DM Sans", sans-serif`;
+        ctx.fillStyle = b.c;
+        ctx.fillText(b.t, bx + tw / 2, by + bh / 2);
+        bx += tw + 3 / cam.zoom;
+      });
+    }
+  });
+
+  ctx.restore();
+
+  // Minimap
+  drawMinimap();
+
+  // Zoom indicator
+  document.getElementById('graphZoomIndicator').textContent = `Zoom: ${Math.round(cam.zoom * 100)}%`;
+
+  if (simRunning) {
+    simulateForce();
+    requestAnimationFrame(drawGraph);
+  }
+}
+
+function drawMinimap() {
+  const mc = document.getElementById('graphMinimap');
+  if (!mc) return;
+  const mctx = mc.getContext('2d');
+  mctx.clearRect(0, 0, 160, 100);
+  mctx.fillStyle = '#11151C';
+  mctx.fillRect(0, 0, 160, 100);
+
+  if (graphNodes.length === 0) return;
+  const xs = graphNodes.map(n=>n.x), ys = graphNodes.map(n=>n.y);
+  const minX = Math.min(...xs) - 50, maxX = Math.max(...xs) + 50;
+  const minY = Math.min(...ys) - 50, maxY = Math.max(...ys) + 50;
+  const rangeX = maxX - minX || 1, rangeY = maxY - minY || 1;
+  const scale = Math.min(150 / rangeX, 90 / rangeY);
+
+  // Edges
+  mctx.strokeStyle = 'rgba(232,168,56,0.2)';
+  mctx.lineWidth = 0.5;
+  graphEdges.forEach(e => {
+    mctx.beginPath();
+    mctx.moveTo(5+(e.source.x-minX)*scale, 5+(e.source.y-minY)*scale);
+    mctx.lineTo(5+(e.target.x-minX)*scale, 5+(e.target.y-minY)*scale);
+    mctx.stroke();
+  });
+
+  // Nodes
+  graphNodes.forEach(nd => {
+    const mx = 5 + (nd.x - minX) * scale;
+    const my = 5 + (nd.y - minY) * scale;
+    mctx.beginPath();
+    mctx.arc(mx, my, 3, 0, Math.PI * 2);
+    mctx.fillStyle = graphSelectedNode && nd.id === graphSelectedNode.id ? '#E8A838' : nd.color + '80';
+    mctx.fill();
+  });
+
+  // Viewport rect
+  const canvas = document.getElementById('graphCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const cW = canvas.width / dpr, cH = canvas.height / dpr;
+  const vx = 5 + (-cam.x / cam.zoom - minX) * scale;
+  const vy = 5 + (-cam.y / cam.zoom - minY) * scale;
+  const vw = (cW / cam.zoom) * scale;
+  const vh = (cH / cam.zoom) * scale;
+  mctx.strokeStyle = 'rgba(232,168,56,0.5)';
+  mctx.lineWidth = 1;
+  mctx.strokeRect(vx, vy, vw, vh);
+}
+
+function renderGraphLegend() {
+  const container = document.getElementById('graphLegend');
+  const types = [...new Set(graphNodes.map(n=>n.type))];
+  container.innerHTML = types.map(t =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11px;color:var(--text-secondary);">
+      <div style="width:12px;height:12px;border-radius:4px;background:${typeColorHex[t]||'#888'}30;border:1.5px solid ${typeColorHex[t]||'#888'};"></div>
+      ${t} <span style="color:var(--text-muted)">(${graphNodes.filter(n=>n.type===t).length})</span>
+    </div>`
+  ).join('');
+}
+
+function renderGraphAdjList() {
+  const container = document.getElementById('graphAdjList');
+  document.getElementById('graphConnCount').textContent = graphEdges.length + ' edges';
+  if (graphEdges.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:16px 0;color:var(--text-muted);font-size:12px;">No FK relationships</div>';
+    return;
+  }
+  container.innerHTML = graphEdges.map(e =>
+    `<div class="graph-conn-row" onmouseenter="highlightEdge('${e.source.id}','${e.target.id}')" onmouseleave="drawGraph()">
+      <div class="graph-conn-dot" style="background:${e.source.color}"></div>
+      <span style="font-weight:500;color:var(--text-primary)">${e.source.name}</span>
+      <span class="graph-conn-dir">→</span>
+      <span style="font-weight:500;color:var(--text-primary)">${e.target.name}</span>
+      <span class="graph-conn-via">${e.attr}</span>
+    </div>`
+  ).join('');
+}
+
+function highlightEdge(srcId, tgtId) {
+  // Temporarily highlight by selecting source
+  const prev = graphSelectedNode;
+  graphSelectedNode = graphNodes.find(n=>n.id===srcId);
+  if (!simRunning) drawGraph();
+  graphSelectedNode = prev;
+}
+
+function graphSelectNode(nd) {
+  graphSelectedNode = nd;
+  document.getElementById('graphNodeBadge').textContent = nd.name;
+
+  // Find connections
+  const outgoing = graphEdges.filter(e => e.source.id === nd.id);
+  const incoming = graphEdges.filter(e => e.target.id === nd.id);
+
+  // Key summary
+  const pks = nd.attrs.filter(a=>a.key==='PK');
+  const cpks = nd.attrs.filter(a=>a.key==='CPK');
+  const fks = nd.attrs.filter(a=>a.key==='FK');
+  const uks = nd.attrs.filter(a=>a.key==='UK');
+  const hasComposite = cpks.length >= 2;
+
+  let keyHtml = '';
+  if (hasComposite) {
+    keyHtml = `<div style="background:rgba(232,168,56,0.08);border:1px solid rgba(232,168,56,0.2);border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:4px;font-weight:600;">⚷ Composite PK</div>
+      <div style="font-size:11px;color:var(--accent-light);">${cpks.map(a=>a.n).join(' + ')}</div>
+    </div>`;
+  } else if (pks.length) {
+    keyHtml = `<div style="background:rgba(232,168,56,0.08);border:1px solid rgba(232,168,56,0.2);border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:4px;font-weight:600;">⚷ Primary Key</div>
+      <div style="font-size:11px;color:var(--accent-light);">${pks[0].n}</div>
+    </div>`;
+  }
+
+  let connHtml = '';
+  if (outgoing.length) {
+    connHtml += `<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin:8px 0 4px;font-weight:500;">References →</div>`;
+    connHtml += outgoing.map(e => `<div class="graph-conn-row" style="margin-bottom:3px">
+      <span class="graph-conn-dir">→</span>
+      <span style="font-weight:500;color:var(--text-primary)">${e.target.name}</span>
+      <span class="graph-conn-via">via ${e.attr}</span>
+    </div>`).join('');
+  }
+  if (incoming.length) {
+    connHtml += `<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin:8px 0 4px;font-weight:500;">Referenced By ←</div>`;
+    connHtml += incoming.map(e => `<div class="graph-conn-row" style="margin-bottom:3px">
+      <span style="color:var(--info)">←</span>
+      <span style="font-weight:500;color:var(--text-primary)">${e.source.name}</span>
+      <span class="graph-conn-via">via ${e.attr}</span>
+    </div>`).join('');
+  }
+  if (!outgoing.length && !incoming.length) {
+    connHtml = '<div style="font-size:11px;color:var(--text-muted);padding:4px 0;">No FK connections (isolated entity)</div>';
+  }
+
+  document.getElementById('graphNodeContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:${nd.color}30;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:${nd.color}">${nd.name.charAt(0)}</div>
+      <div><div style="font-size:14px;font-weight:600;">${nd.name}</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">${nd.type} · ${nd.source||''}</div></div>
+    </div>
+    ${nd.desc?`<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;padding:6px 8px;background:var(--bg-tertiary);border-radius:5px;border-left:2px solid ${nd.color}">${nd.desc}</div>`:''}
+    <div class="detail-grid" style="grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;">
+      <div class="detail-item" style="padding:6px 8px;"><div class="detail-label">Attrs</div><div class="detail-value" style="font-size:14px">${nd.attrs.length}</div></div>
+      <div class="detail-item" style="padding:6px 8px;"><div class="detail-label">PK</div><div class="detail-value" style="font-size:14px;color:var(--accent)">${nd.pkCount + nd.cpkCount}</div></div>
+      <div class="detail-item" style="padding:6px 8px;"><div class="detail-label">FK</div><div class="detail-value" style="font-size:14px;color:var(--info)">${nd.fkCount}</div></div>
+      <div class="detail-item" style="padding:6px 8px;"><div class="detail-label">UK</div><div class="detail-value" style="font-size:14px;color:var(--cat-table)">${uks.length}</div></div>
+    </div>
+    ${keyHtml}
+    ${connHtml}
+  `;
+
+  if (!simRunning) drawGraph();
+}
+
+// ─── CANVAS INTERACTION ───
+function initGraph() {
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const container = canvas.parentElement;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = container.getBoundingClientRect();
+    const w = rect.width;
+    const h = Math.max(520, window.innerHeight - 220);
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+  }
+  resize();
+
+  buildGraph();
+  if (graphLayout === 'force') {
+    requestAnimationFrame(drawGraph);
+  } else {
+    drawGraph();
+  }
+
+  if (graphInitialized) return;
+  graphInitialized = true;
+
+  window.addEventListener('resize', () => { resize(); if (!simRunning) drawGraph(); });
+
+  // Mouse events
+  canvas.addEventListener('mousedown', e => {
+    const pos = canvasToWorld(e);
+    const hit = hitTestNode(pos.x, pos.y);
+    if (hit) {
+      graphDragNode = hit;
+      canvas.style.cursor = 'grabbing';
+      graphSelectNode(hit);
+    } else {
+      isPanning = true;
+      panStart = { x: e.clientX - cam.x, y: e.clientY - cam.y };
+      canvas.style.cursor = 'grabbing';
+      graphSelectedNode = null;
+      document.getElementById('graphNodeBadge').textContent = 'Click a node';
+      document.getElementById('graphNodeContent').innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:12px;">Select an entity node to inspect</div>';
+      if (!simRunning) drawGraph();
+    }
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (graphDragNode) {
+      const pos = canvasToWorld(e);
+      graphDragNode.x = pos.x;
+      graphDragNode.y = pos.y;
+      graphDragNode.vx = 0; graphDragNode.vy = 0;
+      if (!simRunning) drawGraph();
+    } else if (isPanning && panStart) {
+      cam.x = e.clientX - panStart.x;
+      cam.y = e.clientY - panStart.y;
+      if (!simRunning) drawGraph();
+    } else {
+      const pos = canvasToWorld(e);
+      const hit = hitTestNode(pos.x, pos.y);
+      canvas.style.cursor = hit ? 'pointer' : 'grab';
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    if (graphDragNode) {
+      // Reheat sim briefly on drag end
+      if (graphLayout === 'force') { simAlpha = Math.max(simAlpha, 0.15); simRunning = true; requestAnimationFrame(drawGraph); }
+    }
+    graphDragNode = null;
+    isPanning = false;
+    panStart = null;
+    canvas.style.cursor = 'grab';
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    graphDragNode = null;
+    isPanning = false;
+    panStart = null;
+  });
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.92 : 1.08;
+    const newZoom = Math.max(0.2, Math.min(4, cam.zoom * delta));
+    // Zoom toward mouse
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    cam.x = mx - (mx - cam.x) * (newZoom / cam.zoom);
+    cam.y = my - (my - cam.y) * (newZoom / cam.zoom);
+    cam.zoom = newZoom;
+    if (!simRunning) drawGraph();
+  }, { passive: false });
+
+  // Double click to focus
+  canvas.addEventListener('dblclick', e => {
+    const pos = canvasToWorld(e);
+    const hit = hitTestNode(pos.x, pos.y);
+    if (hit) {
+      // Center on this node
+      const rect = canvas.getBoundingClientRect();
+      cam.x = rect.width / 2 - hit.x * cam.zoom;
+      cam.y = rect.height / 2 - hit.y * cam.zoom;
+      cam.zoom = Math.max(cam.zoom, 1.2);
+      graphSelectNode(hit);
+      if (!simRunning) drawGraph();
+    }
+  });
+}
+
+function canvasToWorld(e) {
+  const canvas = document.getElementById('graphCanvas');
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left - cam.x) / cam.zoom,
+    y: (e.clientY - rect.top - cam.y) / cam.zoom
+  };
+}
+
+function hitTestNode(wx, wy) {
+  // Reverse order so topmost drawn node is picked first
+  for (let i = graphNodes.length - 1; i >= 0; i--) {
+    const nd = graphNodes[i];
+    const dx = wx - nd.x, dy = wy - nd.y;
+    if (dx * dx + dy * dy <= nd.radius * nd.radius) return nd;
+  }
+  return null;
+}
+
+function switchGraphLayout(layout, el) {
+  graphLayout = layout;
+  document.querySelectorAll('.graph-layout-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const canvas = document.getElementById('graphCanvas');
+  if (canvas) { applyLayout(layout); if (layout === 'force') { simRunning = true; requestAnimationFrame(drawGraph); } else { drawGraph(); } }
+}
+
+function graphFilterType(type, el) {
+  document.querySelectorAll('#view-graph .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  graphTypeFilter = type === 'All' ? 'all' : type;
+  graphSelectedNode = null;
+  document.getElementById('graphNodeBadge').textContent = 'Click a node';
+  document.getElementById('graphNodeContent').innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:12px;">Select an entity node to inspect</div>';
+  buildGraph();
+  if (graphLayout === 'force') { simRunning = true; requestAnimationFrame(drawGraph); } else { drawGraph(); }
+}
+
+function graphResetView() {
+  cam = { x: 0, y: 0, zoom: 1 };
+  graphSelectedNode = null;
+  applyLayout(graphLayout);
+  if (graphLayout === 'force') { simRunning = true; requestAnimationFrame(drawGraph); } else { drawGraph(); }
+}
+
+function graphFitAll() {
+  if (graphNodes.length === 0) return;
+  const canvas = document.getElementById('graphCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+  const xs = graphNodes.map(n=>n.x), ys = graphNodes.map(n=>n.y);
+  const pad = 80;
+  const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad;
+  const minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+  const rangeX = maxX - minX || 1, rangeY = maxY - minY || 1;
+  cam.zoom = Math.min(W / rangeX, H / rangeY, 2);
+  cam.x = W / 2 - ((minX + maxX) / 2) * cam.zoom;
+  cam.y = H / 2 - ((minY + maxY) / 2) * cam.zoom;
+  if (!simRunning) drawGraph();
+}
+
+// roundRect polyfill for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+    this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r); this.closePath();
+  };
+}
+</script>
+</body>
+</html>
